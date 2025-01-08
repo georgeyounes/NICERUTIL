@@ -1,0 +1,13 @@
+LICENSE.txt
+README.md
+pyproject.toml
+src/nicerutil/bursts.py
+src/nicerutil/correctfpmsel.py
+src/nicerutil/correctrateforfpmsel.py
+src/nicerutil/flagbackgrflares.py
+src/nicerutil/lightcurve.py
+src/nicerutil.egg-info/PKG-INFO
+src/nicerutil.egg-info/SOURCES.txt
+src/nicerutil.egg-info/dependency_links.txt
+src/nicerutil.egg-info/entry_points.txt
+src/nicerutil.egg-info/top_level.txt

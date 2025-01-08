@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nicerutil"
+version = "0.0.1"
+dependencies = [
+]
+requires-python = ">=3.8"
+authors = [
+  {name = "George Younes", email = "george.a.younes@nasa.gov"},
+]
+maintainers = [
+  {name = "George Younes", email = "george.a.younes@nasa.gov"}
+]
+description = "Few scripts that aid in NICER analysis"
+readme = "README.md"
+license = {file = "LICENSE.txt"}
+keywords = ["NICER", "High Energy Astrophysics", "X-ray", "Astronomy", "Astrophysics", "Flares"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Programming Language :: Python"
+]
+
+[project.scripts]
+createlightcurve = "nicerutil.lightcurve:main"
+correctfpmsel = "nicerutil.correctfpmsel:main"
+flaghighenergyflares = "nicerutil.flagbackgrflares:main"
