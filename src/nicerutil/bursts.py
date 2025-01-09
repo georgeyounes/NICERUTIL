@@ -20,7 +20,7 @@ sys.dont_write_bytecode = True
 
 def burstsearch(binnedLC, probLim=0.01, outputfile=None):
     """
-    Module to run a simple burst search algorithm on a binned light curve
+    Function to run a simple burst search algorithm on a binned light curve
     :param binnedLC: dataframe of light curve; columns are {'lcBins', 'lcBinsRange', 'ctrate', 'ctrateErr', 'ctsbin'}
     :type binnedLC: pandas.DataFrame
     :param probLim: probability mass function below hich to consider a bin part of a burst
@@ -85,7 +85,7 @@ def burstsearch(binnedLC, probLim=0.01, outputfile=None):
         bin_bursts.to_csv(outputfile + '.txt', index=False)
 
     burstsearch_result = {'bin_bursts': bin_bursts, 'bins_nobursts': bins_nobursts,
-                          'average_rate_nobursts': average_rate_nobursts, 'average_rate': average_rate}
+                          'average_rate_nobursts': average_rate_nobursts, 'average_rate': np.mean(binnedLC["ctrate"])}
 
     return burstsearch_result
 

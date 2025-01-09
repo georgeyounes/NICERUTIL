@@ -27,6 +27,7 @@ import sys
 import argparse
 import os
 import logging
+import numpy as np
 
 # Custom modules
 from crimp.eventfile import EvtFileOps
@@ -50,7 +51,7 @@ logger.addHandler(consoleHandler)
 
 
 def flagbackgrflares(eventfile, eneLow_back=12, eneHigh_back=15, timebin=5., lcthresh=0.1, probLim=0.01,
-                     outputFile='flagged_flares', creategti=None):
+                     outputFile='flagged_flares', creategti=None, eneLow_src=1, eneHigh_src=5):
     """
     flagbackgrflares creates a light curves, and flags bins that are considered to be outliers
     according to a Poisson mass function
@@ -70,53 +71,45 @@ def flagbackgrflares(eventfile, eneLow_back=12, eneHigh_back=15, timebin=5., lct
     :type outputFile: str
     :param creategti: If given, name of .txt gti file that is compatible with xselect functionality maketime
     :type creategti: str
+    :param eneLow_src: low energy cutoff for source (for plotting purposes only default = 1 keV)
+    :type eneLow_src: float
+    :param eneHigh_src: high energy cutoff for source (for plotting purposes only default = 5 keV)
+    :type eneHigh_src: float
     :return: flares, distinct_flares (all falgged bins and a merged list as well if bins are consecutive)
     :rtype: list
     """
-    # Reading data and filtering for energy
+    # Reading data
     EF = EvtFileOps(eventfile)
     evtFileKeyWords, gtiList = EF.readGTI()
 
-    # Reading TIME column after energy filtering
+    # Dealing with the background
+    #############################
+    # Energy filtering, reading TIME column as numpy array
     dataTP_eneFlt = EF.filtenergy(eneLow=eneLow_back, eneHigh=eneHigh_back)
-    TIME = dataTP_eneFlt['TIME'].to_numpy()
+    TIME_back = dataTP_eneFlt['TIME'].to_numpy()
 
     # Create light curve
-    binnedLC, _ = lightcurve(TIME, gtiList, timebin=timebin, lcthresh=lcthresh)
-
-    binnedLC_corr, GTI = correctrateforfpmsel(eventfile, binnedLC)
+    binnedLC, _ = lightcurve(TIME_back, gtiList, timebin=timebin, lcthresh=lcthresh)
+    binnedLC_corr = correctrateforfpmsel(eventfile, binnedLC)
 
     # FLare search
     burstsearch_result = burstsearch(binnedLC_corr, probLim=probLim, outputfile=outputFile)
     flares = burstsearch_result['bin_bursts']
 
-    # Create a plot of the flares
-    fig, ax1 = plt.subplots(1, figsize=(6, 4.0), dpi=80, facecolor='w', edgecolor='k')
-    ax1.tick_params(axis='both', labelsize=12)
-    ax1.set_xlabel(r'$\,\mathrm{Time\,(MET,\,s)}$', fontsize=12)
-    ax1.set_ylabel(r'$\,\mathrm{Rate\,(counts/\,s)}$', fontsize=12)
-    ax1.ticklabel_format(style='plain', axis='y', scilimits=(0, 0))
-    ax1.xaxis.offsetText.set_fontsize(12)
-    ax1.yaxis.offsetText.set_fontsize(12)
+    # Dealing with the source
+    #############################
+    # Creating a light curve within source energy range
+    dataTP_eneFlt_src = EF.filtenergy(eneLow=eneLow_src, eneHigh=eneHigh_src)
+    TIME_src = dataTP_eneFlt_src['TIME'].to_numpy()
+    binnedLC_src, _ = lightcurve(TIME_src, gtiList, timebin=timebin, lcthresh=lcthresh)
+    binnedLC_src_corr = correctrateforfpmsel(eventfile, binnedLC_src)
+    
+    # Create a simple diagnostic plot of the flares
+    #############################
+    plot_flare_diagnostics(binnedLC_corr, flares, binnedLC_src_corr, outputFile=outputFile)
 
-    ax1.errorbar(binnedLC_corr['lcBins'], binnedLC_corr['ctrate'], xerr=binnedLC_corr['lcBinsRange'] / 2,
-                 yerr=binnedLC_corr['ctrateErr'],
-                 fmt='ok')
-
-    # Plotting the flare interval
-    ax1.errorbar(flares['lcBins'], flares['ctrate'], xerr=flares['lcBinsRange'] / 2, yerr=flares['ctrateErr'],
-                 fmt='or')
-
-    for axis in ['top', 'bottom', 'left', 'right']:
-        ax1.spines[axis].set_linewidth(1.5)
-        ax1.tick_params(width=1.5)
-
-    fig.tight_layout()
-
-    outPlot = outputFile + '.pdf'
-    fig.savefig(outPlot, format='pdf', dpi=200)
-    plt.close(fig)
-
+    # Create .txt and if desired .fits GTI files
+    #############################
     if not flares.empty:
         # Merge flares separated by timebin
         distinct_flares = mergesamebursts(flares, tsameburst=1.5 * timebin)
@@ -171,6 +164,65 @@ def flagbackgrflares(eventfile, eneLow_back=12, eneHigh_back=15, timebin=5., lct
     return flares, distinct_flares
 
 
+def plot_flare_diagnostics(back_lightcurve, flare_lightcurve, src_lightcurve, outputFile='flare_diagnostics'):
+
+    fig, axs = plt.subplots(2, 1, figsize=(10, 8), dpi=200, facecolor='w', edgecolor='k', sharex=True,
+                            sharey=False, gridspec_kw={'width_ratios': [1], 'height_ratios': [1, 1]})
+    axs = axs.ravel()
+
+    # Plotting the "background" light curve,
+    # i.e., out-of-bounds events, and those flagged as flares
+    #########################################################
+    axs[0].tick_params(axis='both', labelsize=12)
+    axs[0].set_ylabel(r'$\,\mathrm{Rate\,(counts/\,s)}$', fontsize=12)
+    axs[0].ticklabel_format(style='plain', axis='y', scilimits=(0, 0))
+    axs[0].xaxis.offsetText.set_fontsize(12)
+    axs[0].yaxis.offsetText.set_fontsize(12)
+    # Plotting all out-of-band events
+    axs[0].errorbar(back_lightcurve['lcBins'], back_lightcurve['ctrate'], xerr=back_lightcurve['lcBinsRange'] / 2,
+                    yerr=back_lightcurve['ctrateErr'], fmt='ok', label='Good GTIs')
+    # Plotting the flare interval
+    axs[0].errorbar(flare_lightcurve['lcBins'], flare_lightcurve['ctrate'], xerr=flare_lightcurve['lcBinsRange'] / 2,
+                    yerr=flare_lightcurve['ctrateErr'], fmt='or', label='Flare GTIs')
+    axs[0].set_title(r'$\,\mathrm{Background\,energy\,range}$', fontsize=12)
+
+    # Plotting the "source" light curve,
+    # i.e., in-bound events, and highlight the bins that correspond to the flares
+    #############################################################################
+    axs[1].tick_params(axis='both', labelsize=12)
+    axs[1].set_xlabel(r'$\,\mathrm{Time\,(MET,\,s)}$', fontsize=12)
+    axs[1].set_ylabel(r'$\,\mathrm{Rate\,(counts/\,s)}$', fontsize=12)
+    axs[1].ticklabel_format(style='plain', axis='y', scilimits=(0, 0))
+    axs[1].xaxis.offsetText.set_fontsize(12)
+    axs[1].yaxis.offsetText.set_fontsize(12)
+    # Plotting all in-band events
+    axs[1].errorbar(src_lightcurve['lcBins'], src_lightcurve['ctrate'], xerr=src_lightcurve['lcBinsRange'] / 2,
+                    yerr=src_lightcurve['ctrateErr'], fmt='ok')
+
+    # Plotting the flare interval atop the source light curve
+    mask = np.where(src_lightcurve.lcBins.isin(flare_lightcurve.lcBins), True, False)
+    flare_src_lightcurve = src_lightcurve[mask]
+
+    axs[1].errorbar(flare_src_lightcurve['lcBins'], flare_src_lightcurve['ctrate'],
+                    xerr=flare_src_lightcurve['lcBinsRange'] / 2, yerr=flare_src_lightcurve['ctrateErr'], fmt='or')
+    axs[1].set_title(r'$\,\mathrm{Source\,energy\,range}$', fontsize=12)
+
+    for axis in ['top', 'bottom', 'left', 'right']:
+        axs[0].spines[axis].set_linewidth(1.5)
+        axs[0].tick_params(width=1.5)
+        axs[1].spines[axis].set_linewidth(1.5)
+        axs[1].tick_params(width=1.5)
+
+    fig.tight_layout()
+    fig.subplots_adjust(hspace=0.1)
+
+    outPlot = outputFile + '.pdf'
+    fig.savefig(outPlot, format='pdf', dpi=200)
+    plt.close(fig)
+
+    return
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Creating time intervals that are likely associated with high-energy background flares - built for "
@@ -190,10 +242,14 @@ def main():
                         help="name of output .pdf light curve showing flagged bins", type=str, default='flagged_flares')
     parser.add_argument("-cg", "--creategti", help="Name of gti fits file compatible with "
                                                    "NICERDAS, default = None", type=str, default=None)
+    parser.add_argument("-els", "--eneLow_src", help="low energy cutoff for source (for plotting "
+                                                     "purposes only), default=1", type=float, default=1)
+    parser.add_argument("-ehs", "--eneHigh_src", help="high energy cutoff for source (for plotting "
+                                                      "purposes only), default=5", type=float, default=5)
     args = parser.parse_args()
 
     flagbackgrflares(args.evtFile, args.eneLow_back, args.eneHigh_back, args.timebin, args.lcthresh, args.problim,
-                     args.outputFile, args.creategti)
+                     args.outputFile, args.creategti, args.eneLow_src, args.eneHigh_src)
 
 
 if __name__ == '__main__':

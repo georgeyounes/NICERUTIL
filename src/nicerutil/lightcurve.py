@@ -77,24 +77,24 @@ def lightcurve(TIME, GTI, timebin=100., lcthresh=0.1, tstart=None, tend=None, ou
                 '\n tstart (MET, s) : ' + str(tstart) +
                 '\n tend (MET, s) : ' + str(tend) +
                 '\n outputFile : ' + str(outputFile) + '\n')
-    
+
     try:
-        if tstart > tend:
+        if (tstart is not None) and (tend is not None) and (tstart > tend):
             raise ValueError("tstart cannot be after tend!")
 
-        elif tstart > GTI[-1:1]:
+        elif (tstart is not None) and (tstart > GTI[-1:1]):
             raise ValueError("tstart cannot be after end of GTI!")
 
-        elif tend < GTI[0:0]:
+        elif (tend is not None) and (tend < GTI[0:0]):
             raise ValueError("tend cannot be before start of GTI!")
 
         elif lcthresh < 0 or lcthresh > 1:
             raise ValueError("lcthresh must be between [0, 1]")
-        
+
     except ValueError as ve:
         logger.error(ve)
         raise
-        
+
     # Restructuring GTI if tstart and tend are provided
     if tstart is None and tend is None:
         logger.info('\n No tstart or tend provided. Using full GTI table instead\n')
@@ -133,12 +133,12 @@ def lightcurve(TIME, GTI, timebin=100., lcthresh=0.1, tstart=None, tend=None, ou
         expEachGTI = startstop[1] - startstop[0]
         fractional_part, nbrBins_pergti = np.modf(expEachGTI / timebin)
         nbrBins_pergti = int(nbrBins_pergti)
-        if fractional_part==0:
+        if fractional_part == 0:
             lcBins_pergti = np.linspace(startstop[0], startstop[0] + nbrBins_pergti * timebin,
-                                                   (nbrBins_pergti + 1))
+                                        (nbrBins_pergti + 1))
         else:
-            lcBins_pergti = np.hstack((np.linspace(startstop[0], startstop[0]+nbrBins_pergti*timebin,
-                                                   (nbrBins_pergti+1)), startstop[1]))
+            lcBins_pergti = np.hstack((np.linspace(startstop[0], startstop[0] + nbrBins_pergti * timebin,
+                                                   (nbrBins_pergti + 1)), startstop[1]))
 
         # Filter TIME array according to GTI
         TIME_idx = (TIME[:] >= startstop[0]) & (TIME[:] <= startstop[1])
@@ -175,8 +175,7 @@ def lightcurve(TIME, GTI, timebin=100., lcthresh=0.1, tstart=None, tend=None, ou
                 'ctsbin': np.concatenate(binnedLC_list[4]).ravel()}
 
     binnedLC = pd.DataFrame.from_dict(binnedLC)
-
-    binnedLC = binnedLC[binnedLC.lcBinsRange < (lcthresh * timebin)]
+    binnedLC = binnedLC[binnedLC.lcBinsRange > (lcthresh * timebin)]
 
     if outputFile is not None:
         plotlightcurve(binnedLC, outputFile=outputFile)
@@ -208,7 +207,7 @@ def plotlightcurve(binnedLC, outputFile='lc_plot'):
     ax1.xaxis.offsetText.set_fontsize(12)
     ax1.yaxis.offsetText.set_fontsize(12)
 
-    ax1.errorbar(lcBins, ctrate, xerr=lcBinsRange/2, yerr=ctrateErr, fmt='ok')
+    ax1.errorbar(lcBins, ctrate, xerr=lcBinsRange / 2, yerr=ctrateErr, fmt='ok')
 
     for axis in ['top', 'bottom', 'left', 'right']:
         ax1.spines[axis].set_linewidth(1.5)

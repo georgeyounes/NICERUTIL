@@ -13,22 +13,16 @@ import sys
 sys.dont_write_bytecode = True
 
 
-# Script that time-filters the FPM_SEL table in a NICER event file to match its GTI table
 def correctrateforfpmsel(eventfile, binnedlightcurve):
     # Reading the selected FPM per 1-second interval from event file
     EF = EvtFileOps(eventfile)
     _, FPMSEL_table_condensed = EF.read_fpmsel()
 
-    # binnedlightcurve is output of lightcurve module. It is a list of [0] the actual binned light curve
-    # and [1] the corresponding GTI
-    binnedLC = binnedlightcurve[0]
-    GTI = binnedlightcurve[1]
-
-    lcBins = binnedLC["lcBins"].to_numpy()
-    lcBinsRange = binnedLC["lcBinsRange"].to_numpy()
-    ctrate = binnedLC["ctrate"].to_numpy()
-    ctrateErr = binnedLC["ctrateErr"].to_numpy()
-    ctsbin = binnedLC["ctsbin"].to_numpy()
+    lcBins = binnedlightcurve["lcBins"].to_numpy()
+    lcBinsRange = binnedlightcurve["lcBinsRange"].to_numpy()
+    ctrate = binnedlightcurve["ctrate"].to_numpy()
+    ctrateErr = binnedlightcurve["ctrateErr"].to_numpy()
+    ctsbin = binnedlightcurve["ctsbin"].to_numpy()
 
     for ii, timeofbin in enumerate(lcBins):
         bin_start = timeofbin - lcBinsRange[ii] / 2
@@ -71,6 +65,6 @@ def correctrateforfpmsel(eventfile, binnedlightcurve):
                     'ctsbin': ctsbin}
     corrbinnedLC = pd.DataFrame.from_dict(corrbinnedLC)
 
-    return corrbinnedLC, GTI
+    return corrbinnedLC
 
 
