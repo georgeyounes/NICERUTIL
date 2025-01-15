@@ -9,7 +9,7 @@ background flares caused by high-energy particles. This component in NICER is kn
 [this page](https://heasarc.gsfc.nasa.gov/docs/nicer/analysis_threads/flares/).
 
 
-Another script called **correctfpmsel** will filter the FPM_SEL table in an event file so that its time stamps (TIME column) fall within the GTIs. This is not always the case and, when some of the time stamps in FPM_SEL aren't covered by the orbit file of the observation, it causes the HEASoft barycentering routine "BARYCORR" to fail when attempting to barycenter the FPM_SEL TIME column. For this reason, "BARYCORR", in its current version, skips over the barycentering of the TIME column in the FPM_SEL table of an event file. Below, I will summarize how to regain the "BARYCORR" ability to apply barycenteric correction to the FPM_SEL table, and the use of the script **correctfpmsel**.
+Another script called **correctfpmsel** will filter the FPM_SEL table in an event file so that its time stamps (TIME column) fall within the GTIs. This is not always the case and, when some of the time stamps in FPM_SEL aren't covered by the orbit file of the observation, it causes the HEASoft barycentering routine BARYCORR to fail when attempting to barycenter the FPM_SEL TIME column. For this reason, BARYCORR, in its current version, skips over the barycentering of the TIME column in the FPM_SEL table of an event file. Below, I will summarize how to regain the BARYCORR ability to apply barycenteric correction to the FPM_SEL table, and the use of the script **correctfpmsel**.
 
 ## Acknowledgements
 
@@ -39,15 +39,15 @@ of required and optional arguments with the usual '-h' option. Here we shall cov
 
 ### Running correctfpmsel
 
-**correctfpmsel** is really only useful if you wish to barycenter-correct the TIME column in the FPM_SEL table of a NICER event file, and only in the cases when the said TIME column has some time stamps outside of the valid orbit file for the given observation, which causes **barycorr** to fail. Note that in its current form, **barycorr** skips over barycentering the TIME column of the FPM_SEL table (since [HEASoft version 6.31](https://heasarc.gsfc.nasa.gov/FTP/software/ftools/release/archive/Release_Notes_6.31)). Hence, we first need to re-enable barycentering of the TIME column in the FPM_SEL table.
+**correctfpmsel** is really only useful if you wish to barycenter-correct the TIME column in the FPM_SEL table of a NICER event file, and only in the cases when the said TIME column has some time stamps outside of the valid orbit file for the given observation, which causes BARYCORR to fail. Note that in its current form, BARYCORR skips over barycentering the TIME column of the FPM_SEL table (since [HEASoft version 6.31](https://heasarc.gsfc.nasa.gov/FTP/software/ftools/release/archive/Release_Notes_6.31)). Hence, we first need to re-enable barycentering of the TIME column in the FPM_SEL table.
 
 #### Enabling FPM_SEL barycentering through BARYCORR
 
-If you wish to allow the heasoft tool **barycorr** to perform barycentering on the FPM_SEL table of a NICER event file, you can follow these steps: (1) in axBary.c, which can be found under heasoft-version/heagen/barycorr/, remove the block that states that NICER FPM_SEL should stay untouched, (2) navigate to heasoft-version/heagen/your-build/BUILD_DIR, and (3) run **./hmake** and then **./hmake install**.
+If you wish to allow the heasoft tool BARYCORR to perform barycentering on the FPM_SEL table of a NICER event file, you can follow these steps: (1) in axBary.c, which can be found under heasoft-version/heagen/barycorr/, remove the block that states that "always ignore NICER FPM_SEL extension" (code on line 577), (2) navigate to heasoft-version/heagen/your-build/BUILD_DIR, and (3) run **./hmake** and then **./hmake install**.
 
-In the above, heasoft-version directory refers to the version number, e.g., heasoft-6.33.1. Also, the your-build directory refers to your machine's architecture, e.g., aarch64-apple-darwin23.4.0. Your **barycorr** should now barycenter-correct the TIME column in the FPM_SEL table.
+In the above, heasoft-version directory refers to the version number, e.g., heasoft-6.33.1. Also, the your-build directory refers to your machine's architecture, e.g., aarch64-apple-darwin23.4.0. Your BARYCORR should now barycenter-correct the TIME column in the FPM_SEL table.
 
-For the most part, **barycorr** will run without any errors. However, there are few instances when that is not the case, and **barycorr** exits with an error (something like TIME outside of orbit file). The tool **correctfpmsel** will fix this issue by filtering out these time stamps.
+For the most part, BARYCORR will run without any errors. However, there are few instances when that is not the case, and BARYCORR exits with an error (something like TIME outside of orbit file). The tool **correctfpmsel** will fix this issue by filtering out these time stamps.
 
 
 To run **correctfpmsel**, all that you require is an event file
@@ -66,16 +66,13 @@ In its simplest form, **flaghighenergyflares** can be run as follows:
 >> flaghighenergyflares ni6533062201_0mpu7_cl.evt
 ```
 
-This script will produce a light curve in the 12-15 keV range, where the NICER effective area is practically 0. The default time-bin used is 5 seconds. Any flare-like structure in the light curve is to be considered background. The script will search for bins with a number of counts that is too large compared to the mean to be considered random Poisson fluctuation and flag it as a potential background flare. If desired the user could request an xselect, and NICERDAS-compatible GTI fits file that corresponds to the flagged events. A plot of the flagged events is also produced.
+This script will produce a light curve in the 12-15 keV range (default parameters), where the NICER effective area is practically 0. The default time-bin used is 5 seconds. Any flare-like structure in the light curve is to be considered background. Under this assumption, the script will search for bins with a number of counts that is too large compared to the full light curve mean to be considered random Poisson fluctuation and flag it as a potential background flare. If desired the user could request an xselect and NICERDAS-compatible GTI fits file that corresponds to the flagged events. A plot of the flagged events is also produced. 
 
-As an example, I have added to the data folder an event file with such high-energy particle background (ni6020040101_0mpu7_cl.evt). Running 
+There are multiple flags that can help diagnose the extent of the flare contamination to your data. The -elb and -ehb control the energy range in keV within which to search for the flares. The -els and -ehs control the energy range in keV where source events supposedly lie, this is used for plotting purposes only. The -tb is the time bin of the light curve. The aggressiveness with which you wish to filter the background can be adjusted with the optional parameter --problim (or -pb); the lower the number the less aggressive the cleaning is. The -of flag(--outputFile) defines the name of the output .pdf file that shows 3-row panels, the elb-ehb keV light curve, the els-ehs keV light curve, and the FPM_OVERONLY_COUNT and COR_SAX. The flare intervals are flagged in red in all three panels.
 
-```bash
->> flaghighenergyflares ni6020040101_0mpu7_cl.evt -elb 12 -ehb 15 -tb 5 -of ni6020040101_flares -cg ni6020040101_flares
-```
-The -elb and -ehb control the energy range in keV within which to search for the flares. The -els and -ehs control the energy range in keV where source events supposedly lies, this is used for plotting purposes only. The -tb is the time bin of the light curve. The aggressiveness with which you wish to filter the background can be adjusted with the optional parameter --problim (or -pb); the lower the number the less aggressive the cleaning is. The -cg argument (--creategti) will create a NICERDAS compatible GTI fits file that can be used with nicerl2 (note that HEASOFT should be initialized for this to properly run).
+To save an xselect and NICERDAS-compatible GTI fits file, the user can provide a desirved name through the -cg argument (--creategti). Note that HEASOFT should be initialized for this to properly run).
 
-The output of this **flaghighenergyflares** run will produce three output files. ni6020040101_flares.pdf is a plot highlighting the eliminated flare intervals, ni6020040101_flares.fits is the corresponding GTI fits file that can be used with nicerl2 to filter out those flare intervals, and a log file nicerutil_logfile.log which holds some useful information. 
+Lastly, it really depends on your science whether, and how much, particle-background cleaning you want to apply. I personally work with sources on the faint end of things (~0.1-10 counts/s), and I care about observing the pulsed emission, which is sensitive to background light especially if the pulsed flux is low. Hence, I tend to be more conservative in my approach. Except for one source, 4U 0142+61, I tend to be more loose, since it is a relatively bright target with about 60 counts/s. So, think of your science case and the source brightness when applying this filtering.
 
 ## Disclaimer
 

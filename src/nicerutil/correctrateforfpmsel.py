@@ -43,6 +43,11 @@ def correctrateforfpmsel(eventfile, binnedlightcurve):
                          mkf_toa_filtered['TOTFPMSEL'].tail(1).to_numpy())) +
                        np.sum(mkf_toa_filtered['TOTFPMSEL'].loc[1:len(mkf_toa_filtered) - 2]))
 
+        # If number of selected detectors is 0 during a certain supposed good time interval, move on
+        # This is okay here, but keep in mind it does mess up your good-time-intervals
+        # if nbr_sel_det < 1:
+        #    continue
+
         # Here we measure the number of expected detectors, naively it is 52 * number of time bins
         # However, the first and last bins may have covered a fraction of 1 second, hence we normalize accordingly
         exp_nbr_det = ((1 - (bin_start - mkf_toa_filtered['TIME'].head(1).to_numpy())) * 52 +
@@ -66,5 +71,3 @@ def correctrateforfpmsel(eventfile, binnedlightcurve):
     corrbinnedLC = pd.DataFrame.from_dict(corrbinnedLC)
 
     return corrbinnedLC
-
-
