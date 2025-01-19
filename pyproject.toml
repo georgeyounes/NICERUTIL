@@ -27,3 +27,4 @@ classifiers = [
 createlightcurve = "nicerutil.lightcurve:main"
 correctfpmsel = "nicerutil.correctfpmsel:main"
 flaghighenergyflares = "nicerutil.flagbackgrflares:main"
+mkfdiagnostics = "nicerutil.mkfdiagnostics:main"
