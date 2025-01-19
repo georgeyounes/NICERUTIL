@@ -35,7 +35,7 @@ def mkf_diagnostics(mkfFile, sunshine=2, sunAngLR=45, sunAngUR=180, sunAzLR=-180
     if timepostleak:
         timefiltered_mkf = MkfFileOps(trackingfiltermkf_table).timefiltermkf(
             gtilist=np.array([[296229602.000, 596229602.000]]))
-        print('Size of MKF file after time filtering {}'.format(np.shape(timefiltered_mkf)[0]))
+        print('Size of MKF file post-leak {}'.format(np.shape(timefiltered_mkf)[0]))
     else:
         timefiltered_mkf = trackingfiltermkf_table
 
@@ -59,21 +59,28 @@ def mkf_diagnostics(mkfFile, sunshine=2, sunAngLR=45, sunAngUR=180, sunAzLR=-180
         return
 
     # Spread of time interval that defines our filtering criteria
-    print('Spread in time after filtering is {} days'.format((np.max(np.sort(sunazfiltered_mkf['tNICERmkf'])) -
-                                                              np.mean(np.sort(sunazfiltered_mkf['tNICERmkf'])))
-                                                             / 86400))
+    timespread = (np.max(np.sort(sunazfiltered_mkf['tNICERmkf'])) -
+                  np.mean(np.sort(sunazfiltered_mkf['tNICERmkf']))) / 86400
+    print('Spread in time after filtering is {} days'.format(timespread))
+    avg_moonang = np.mean(sunazfiltered_mkf['moonAng'])
+    print('Average Moon angle is {} degrees'.format(avg_moonang))
+    avg_brightearth = np.mean(sunazfiltered_mkf['brightEarth'])
+    print('Average Bright earth angle is {} degrees'.format(avg_brightearth))
+    avg_elevation = np.mean(sunazfiltered_mkf['elevation'])
+    print('Average elevation angle is {} degrees'.format(avg_elevation))
+
+    average_ancilliary_info = {'timespread': timespread, 'avg_moon': avg_moonang,
+                               'avg_brightearth': avg_brightearth, 'avg_elevation': avg_elevation}
 
     # Defining NICER detectors in geographical location
     # We will be plotting things per NICER detector
     nicDET_geograph = define_nicerdetloc()
 
     # Undershoot parameters
-    under_perFPM = np.zeros((len(sunazfiltered_mkf['tNICERmkf']), len(nicDET_geograph)))
     under_perFPM_mean = np.zeros(len(nicDET_geograph))
     under_perFPM_stdv = np.zeros(len(nicDET_geograph))
     under_perFPM_median = np.zeros(len(nicDET_geograph))
     for ll, det_num in enumerate(nicDET_geograph):
-        under_perFPM[:, ll] = sunazfiltered_mkf['FPM_under' + det_num]
         under_perFPM_mean[ll] = np.mean(sunazfiltered_mkf['FPM_under' + det_num])
         under_perFPM_stdv[ll] = np.std(sunazfiltered_mkf['FPM_under' + det_num])
         under_perFPM_median[ll] = np.median(sunazfiltered_mkf['FPM_under' + det_num])
@@ -81,7 +88,7 @@ def mkf_diagnostics(mkfFile, sunshine=2, sunAngLR=45, sunAngUR=180, sunAzLR=-180
     average_undershoot_perFPM = pd.DataFrame(np.vstack((under_perFPM_mean, under_perFPM_stdv, under_perFPM_median)),
                                              columns=["average", "stdv", "median"], index=nicDET_geograph)
 
-    return sunazfiltered_mkf, average_undershoot_perFPM
+    return sunazfiltered_mkf, average_undershoot_perFPM, average_ancilliary_info
 
 
 def plot_under_sunAz_sunAngle(sunazfiltered_mkf, nicDET_geograph, sunAzLR, sunAzUR, outputfile):
@@ -149,7 +156,7 @@ def plot_under_sunAz_sunAngle(sunazfiltered_mkf, nicDET_geograph, sunAzLR, sunAz
     cbar.set_label("Sun Angle", fontsize=40)
 
     # Saving figure
-    plotName = outputfile + '.png'
+    plotName = outputfile + '_under_sunAz_sunAngle.png'
     fig.savefig(plotName, format='png', dpi=200)
     plt.close()
 
@@ -186,7 +193,7 @@ def plot_sunAz_under(sunazfiltered_mkf, nicDET_geograph, sunAzLR, sunAzUR, outpu
 
     # Saving figure
     fig.tight_layout()
-    plotName = outputfile + '.png'
+    plotName = outputfile + '_sunAz_under.png'
     fig.savefig(plotName, format='png', dpi=200)
     plt.close()
 
@@ -219,7 +226,7 @@ def plot_averageunder_perfpm(average_undershoot_perFPM, nicDET_geograph, outputf
 
     # Saving figure
     fig.tight_layout()
-    plotName = outputfile + '.png'
+    plotName = outputfile + '_averageunder_perfpm.png'
     fig.savefig(plotName, format='png', dpi=200)
     plt.close()
 
@@ -249,7 +256,7 @@ def plot_medianunder_perfpm(average_undershoot_perFPM, nicDET_geograph, outputfi
 
     # Saving figure
     fig.tight_layout()
-    plotName = outputfile + '.png'
+    plotName = outputfile + '_medianunder_perfpm.png'
     fig.savefig(plotName, format='png', dpi=200)
     plt.close()
 
@@ -279,8 +286,26 @@ def main():
                                                     "bins", type=str, default='mkf_diagnostics')
     args = parser.parse_args()
 
-    mkf_diagnostics(args.mkfFile, args.sunshine, args.sunAngLR, args.sunAngUR, args.sunAzLR, args.sunAzUR,
-                    args.timepostleak, args.writetocsv, args.outputFile)
+    sunazfiltered_mkf, average_undershoot_perFPM, average_ancilliary_info = mkf_diagnostics(args.mkfFile, args.sunshine,
+                                                                                            args.sunAngLR,
+                                                                                            args.sunAngUR, args.sunAzLR,
+                                                                                            args.sunAzUR,
+                                                                                            args.timepostleak,
+                                                                                            args.writetocsv,
+                                                                                            args.outputFile)
+
+    # Create under_sunAz_sunAngle plot
+    nicDET_geograph = define_nicerdetloc()
+    plot_under_sunAz_sunAngle(sunazfiltered_mkf, nicDET_geograph, args.sunAzLR, args.sunAzUR, args.outputfile)
+
+    # Create sunAz_under plot
+    plot_sunAz_under(sunazfiltered_mkf, nicDET_geograph, args.sunAzLR, args.sunAzUR, args.outputfile)
+
+    # Create averageunder_perfpm plot
+    plot_averageunder_perfpm(average_undershoot_perFPM, nicDET_geograph, args.outputfile)
+
+    # Create medianunder_perfpm plot
+    plot_medianunder_perfpm(average_undershoot_perFPM, nicDET_geograph, args.outputfile)
 
 
 if __name__ == '__main__':
