@@ -5,11 +5,9 @@ Compare the undershoots in N sets of MKF files
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from scipy import stats
 import seaborn as sns
-# import glob
 
-from nicerutil.nicermkf import MkfFileOps, readmkffile, define_nicerdetloc, define_nicerdetloc
+from nicerutil.nicermkf import MkfFileOps, define_nicerdetloc
 from nicerutil.mkfdiagnostics import mkf_diagnostics, createalldiagnosticsplots
 
 import sys
@@ -25,7 +23,7 @@ def comparemkfundershoots(listofmkffiles, sunshine=2, sunAngLR=45, sunAngUR=180,
     # Create folder in working directory to drop plots and files in
     if not os.path.exists(outputdir):
         # if the parent directory is not present, create it
-        os.makedirs("outputdir")
+        os.makedirs(outputdir, exist_ok=True)
 
     # Reading mkfs
     for kk, mkffile in enumerate(listofmkffiles):
@@ -36,7 +34,7 @@ def comparemkfundershoots(listofmkffiles, sunshine=2, sunAngLR=45, sunAngUR=180,
                                                                     sunAzUR=sunAzUR, timepostleak=timepostleak)
 
         # Move on if mkf is empty after filtering
-        if filteredmkf.empty:
+        if not filteredmkf:
             print('{} file: DataFrame  after all filtering is empty - moving on'.format(mkffile))
             return
 
@@ -45,10 +43,10 @@ def comparemkfundershoots(listofmkffiles, sunshine=2, sunAngLR=45, sunAngUR=180,
 
         # Create working directory for specific cuts
         try:
-            directory_specific_cuts = ('ss' + sunshine +'_sl' + sunAngLR + '_su' + sunAngUR + '_ml' + moonAngLR + '_mu'
+            directory_specific_cuts = ('ss' + sunshine + '_sl' + sunAngLR + '_su' + sunAngUR + '_ml' + moonAngLR + '_mu'
                                        + moonAngUR + '_bel' + brearthLR + '_beu' + brearthUR + '_al' + sunAzLR + '_au'
                                        + sunAzUR)
-            os.mkdir(directory_specific_cuts)
+            os.makedirs(directory_specific_cuts)
             command = 'mv ' + directory_specific_cuts + ' ' + outputdir
             os.system(command)
         except FileExistsError:
@@ -57,7 +55,7 @@ def comparemkfundershoots(listofmkffiles, sunshine=2, sunAngLR=45, sunAngUR=180,
         # Create all diagnostics plots and move them to their own directory 'outputdir'
         if diagnosticsplots:
             try:
-                os.mkdir('diagnostics_plots')
+                os.makedirs('diagnostics_plots')
                 command = 'mv diagnostics_plots ' + outputdir + '/' + directory_specific_cuts
                 os.system(command)
             except FileExistsError:
@@ -81,8 +79,7 @@ def comparemkfundershoots(listofmkffiles, sunshine=2, sunAngLR=45, sunAngUR=180,
     # Drop detector 63 which is consistently larger - should be same column for all
     merged_average_undershoot_perFPM = merged_average_undershoot_perFPM.drop(pd.Index(['63']))
 
-    # remove rows of the 9 detectors with largest undershoot in each column
-    # Count those detectors and we hope they are close to 9 rather than close to 63
+    # remove rows of the "number_largestfpms_to_flag" detectors with largest undershoot in each column
     max_indices_all = merged_average_undershoot_perFPM.apply(lambda col: col.nlargest(
         number_largestfpms_to_flag).index.tolist())
     max_indices_all_flat_unique = np.unique(max_indices_all.to_numpy().flatten())
@@ -129,7 +126,7 @@ def comparemkfundershoots(listofmkffiles, sunshine=2, sunAngLR=45, sunAngUR=180,
     # to-do
 
     return (merged_median_undershoot_perFPM_allclean, merged_average_undershoot_perFPM_allclean,
-            corr_matrix_median, corr_matrix_average)
+            corr_matrix_median, corr_matrix_average, indices_good_det)
 
 
 def readmkfsfromtextfile(mkfsintextfile):

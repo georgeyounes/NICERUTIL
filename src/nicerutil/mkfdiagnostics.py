@@ -71,7 +71,10 @@ def mkf_diagnostics(mkfFile, sunshine=2, sunAngLR=45, sunAngUR=180, moonAngLR=0,
     # Checking if the dataframe after filtering is empty or not
     if sunazfiltered_mkf.empty:
         print('DataFrame after all filtering is empty - Exiting')
-        return
+        sunazfiltered_mkf = []
+        average_undershoot_perFPM = []
+        average_ancilliary_info = []
+        return sunazfiltered_mkf, average_undershoot_perFPM, average_ancilliary_info
 
     # Spread of time interval that defines our filtering criteria
     timespread = (np.max(np.sort(sunazfiltered_mkf['tNICERmkf'])) -
