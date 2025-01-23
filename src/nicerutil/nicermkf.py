@@ -85,11 +85,11 @@ class MkfFileOps:
 
         return trackingfiltered_mkf
 
-    def sunshinefiltermkf(self, sunshine):
+    def sunshinefiltermkf(self, sunshine=2):
         """
         Filters the mkf file according to day or night orbit
         :param sunshine: sunshine keyword
-        :type sunshine: numpy.ndarray
+        :type sunshine: int
         :return: sunshinefiltered_mkf
         :rtype: pandas.DataFrame
         """
@@ -105,7 +105,7 @@ class MkfFileOps:
 
     def sunanglefiltermkf(self, sunang_ll=0, sunang_ul=180):
         """
-        Filters the mkf file according to day or night orbit
+        Filters the mkf file according to sun angle
         :param sunang_ll: sunangle lower-limit
         :type sunang_ll: float
         :param sunang_ul: sunangle upper-limit
@@ -119,9 +119,41 @@ class MkfFileOps:
 
         return sunanglefiltered_mkf
 
+    def moonanglefiltermkf(self, moonang_ll=0, moonang_ul=180):
+        """
+        Filters the mkf file according to moon angle
+        :param moonang_ll: Moon angle lower-limit
+        :type moonang_ll: float
+        :param moonang_ul: Moon angle upper-limit
+        :type moonang_ul: float
+        :return: moonanglefiltered_mkf
+        :rtype: pandas.DataFrame
+        """
+        fullmkf = self.mkftable
+        moonanglefiltered_mkf = fullmkf.loc[((fullmkf['MOON_ANGLE'] >= moonang_ll) &
+                                            (fullmkf['MOON_ANGLE'] <= moonang_ul))]
+
+        return moonanglefiltered_mkf
+
+    def brightearthanglefiltermkf(self, brightearth_ll=0, brightearth_ul=180):
+        """
+        Filters the mkf file according to bright earth angle
+        :param brightearth_ll: bright Earth lower-limit
+        :type brightearth_ll: float
+        :param brightearth_ul: bright Earth upper-limit
+        :type brightearth_ul: float
+        :return: sunanglefiltered_mkf
+        :rtype: pandas.DataFrame
+        """
+        fullmkf = self.mkftable
+        brightearthanglefiltered_mkf = fullmkf.loc[((fullmkf['brightEarth'] >= brightearth_ll) &
+                                                    (fullmkf['brightEarth'] <= brightearth_ul))]
+
+        return brightearthanglefiltered_mkf
+
     def sunazfiltermkf(self, sunaz_ll=0, sunaz_ul=180):
         """
-        Filters the mkf file according to day or night orbit
+        Filters the mkf file according to sun azimuth angle
         :param sunaz_ll: sun azimuth (clocking) lower-limit
         :type sunaz_ll: float
         :param sunaz_ul: sun azimuth (clocking) upper-limit
@@ -135,13 +167,15 @@ class MkfFileOps:
 
         return sunazfiltered_mkf
 
-    def write_mkf_to_csv(self, output_file):
+    def write_mkf_to_csv(self, output_file, saveindex=True):
         """
         Write mkf table to csv file output file .mkf.txt
         :param output_file: name of output CSV file
         :type output_file: str
+        :param saveindex: whether to save index to output file
+        :type saveindex: bool
         """
-        self.mkftable.to_csv(output_file + '.txt', sep=' ', index=False)
+        self.mkftable.to_csv(output_file + '.txt', sep=' ', index=saveindex)
 
         return
 
@@ -183,12 +217,14 @@ def readmkffile(mkffile):
     elif 'AZ_SUN' in hdulist['PREFILTER'].columns.names:
         # Check if sun clocking angle (AZ_SUN) in PREFILTER table as calculated with nicerutil
         AZ_SUN = tbdata.field('AZ_SUN').T
+    elif 'SUN_AZ' in hdulist['PREFILTER'].columns.names:
+        # Check if sun clocking angle (SUN_AZ) in PREFILTER table as calculated with old version of nicerutil
+        AZ_SUN = tbdata.field('SUN_AZ').T
     else:
-        print('Sorry cannot find Sun clocking angle')
-        return
+        raise Exception('Sorry cannot find Sun clocking angle')
 
     # Moon related
-    moonAng = tbdata.field('MOON_ANGLE')
+    MOON_ANGLE = tbdata.field('MOON_ANGLE')
 
     # Pointing related
     RA_pointing = tbdata.field('RA')
@@ -220,7 +256,7 @@ def readmkffile(mkffile):
 
     # This one does not have the per FPM data - a pain to implement in PANDAS
     mkfData_tmp = np.vstack(
-        (tNICERmkf, tNICERmkf_mjd, RA_sun, DEC_sun, SUN_ANGLE, SUNSHINE, AZ_SUN, moonAng, RA_pointing,
+        (tNICERmkf, tNICERmkf_mjd, RA_sun, DEC_sun, SUN_ANGLE, SUNSHINE, AZ_SUN, MOON_ANGLE, RA_pointing,
          DEC_pointing, ROLL, ang_dist, elevation, brightEarth, starTrackerValid, ATT_MODE, ATT_SUBMODE_AZ,
          ATT_SUBMODE_EL, inSAA, corSax, ATT_ANG_AZ, ATT_ANG_EL, TOToverCount,
          TOTunderCount))
@@ -234,6 +270,7 @@ def readmkffile(mkffile):
             overCountALLFPMs = np.vstack((overCountALLFPMs, MPUoverCount[:, ii, jj]))
 
     overCountALLFPMs = overCountALLFPMs[1:]  # Removing the 0 preallocation - ugly for now
+    overCountALLFPMs = np.where(overCountALLFPMs == 0, np.nan, overCountALLFPMs)  # Replace 0 with NAN
 
     # Reading UNDER_COUNT per FPM
     # Falttening out the per MPU table, which includes FPM information and include them as single column in the overall pandas data frame
@@ -244,6 +281,7 @@ def readmkffile(mkffile):
             underCountALLFPMs = np.vstack((underCountALLFPMs, MPUunderCount[:, ii, jj]))
 
     underCountALLFPMs = underCountALLFPMs[1:]  # Removing the 0 preallocation - ugly for now
+    underCountALLFPMs = np.where(underCountALLFPMs == 0, np.nan, underCountALLFPMs)
 
     # Merging all information so far into a single mkfData
     mkfData = np.vstack((mkfData_tmp, overCountALLFPMs, underCountALLFPMs)).T
@@ -251,7 +289,7 @@ def readmkffile(mkffile):
     # converting the above to a dataframe
     mkftable_df = pd.DataFrame(mkfData,
                                columns=['tNICERmkf', 'tNICERmkf_mjd', 'RA_sun', 'DEC_sun', 'SUN_ANGLE', 'SUNSHINE',
-                                        'AZ_SUN', 'moonAng', 'RA_pointing', 'DEC_pointing', 'ROLL', 'ang_dist',
+                                        'AZ_SUN', 'MOON_ANGLE', 'RA_pointing', 'DEC_pointing', 'ROLL', 'ang_dist',
                                         'elevation', 'brightEarth',
                                         'starTrackerValid', 'ATT_MODE', 'ATT_SUBMODE_AZ', 'ATT_SUBMODE_EL', 'inSAA',
                                         'corSax',
@@ -292,13 +330,13 @@ def define_nicerdetloc():
     """
     # Defining NICER detectors in geographical location
     # We will be plotting things per NICER detector
-    nicerdetloc_geograph = [("06", "07", "16", "17", "27", "37", "47", "57",
+    nicerdetloc_geograph = (["06", "07", "16", "17", "27", "37", "47", "57",
                              "05", "15", "25", "26", "35", "36", "46", "56",
                              "04", "14", "24", "34", "44", "45", "54", "55",
                              "03", "13", "23", "33", "43", "53", "66", "67",
                              "02", "12", "22", "32", "42", "52", "64", "65",
                              "01", "11", "21", "31", "41", "51", "62", "63",
-                             "00", "10", "20", "30", "40", "50", "60", "61")]
+                             "00", "10", "20", "30", "40", "50", "60", "61"])
 
     return nicerdetloc_geograph
 

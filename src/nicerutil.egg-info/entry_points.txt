@@ -1,0 +1,5 @@
+[console_scripts]
+correctfpmsel = nicerutil.correctfpmsel:main
+createlightcurve = nicerutil.lightcurve:main
+flaghighenergyflares = nicerutil.flagbackgrflares:main
+mkfdiagnostics = nicerutil.mkfdiagnostics:main
