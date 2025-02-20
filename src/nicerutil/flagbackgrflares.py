@@ -16,12 +16,13 @@ import matplotlib.pyplot as plt
 import sys
 import argparse
 import os
-import logging
 import numpy as np
 from astropy.io import fits
 
 # Custom modules
 from crimp.eventfile import EvtFileOps
+
+from nicerutil.nicerutil_logging import get_logger
 from nicerutil.lightcurve import lightcurve
 from nicerutil.bursts import burstsearch, mergesamebursts
 from nicerutil.correctrateforfpmsel import correctrateforfpmsel
@@ -31,15 +32,7 @@ sys.dont_write_bytecode = True
 
 # Log config
 ############
-logFormatter = logging.Formatter('[%(asctime)s] %(levelname)8s %(message)s ' +
-                                 '(%(filename)s:%(lineno)s)', datefmt='%Y-%m-%d %H:%M:%S')
-logger = logging.getLogger('nicerutil_log')
-logger.setLevel(logging.DEBUG)
-
-consoleHandler = logging.StreamHandler()
-consoleHandler.setFormatter(logFormatter)
-consoleHandler.setLevel(logging.WARNING)
-logger.addHandler(consoleHandler)
+logger = get_logger(__name__)
 
 
 def flagbackgrflares(eventfile, mkffile, eneLow_back=12, eneHigh_back=15, timebin=5., lcthresh=0.1, probLim=0.01,

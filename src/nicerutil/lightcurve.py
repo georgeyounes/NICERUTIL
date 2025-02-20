@@ -1,7 +1,7 @@
 """
 A simple module to create a light curve from a TIME column. An array of GTIs
 must also be provided. Optional parameters include timebin(=100) in second, lcthresh(=0.1)
-which define the bin to be excluded if exposure is less than lcthresh*timebin, 
+which defines the bins to be excluded if exposure is less than lcthresh*timebin,
 tstart(=None) and tend(=None) which define the start and end times of the light curve
 
 Currently, this module does not perfrom deadtime correction
@@ -19,27 +19,18 @@ Run "createlightcurve -h" for usage and options
 import sys
 import numpy as np
 import argparse
-import logging
 import matplotlib.pyplot as plt
 import pandas as pd
 
 from crimp.eventfile import EvtFileOps
 from nicerutil.bursts import burstsearch
+from nicerutil.nicerutil_logging import get_logger
 
 sys.dont_write_bytecode = True
 
 # Log config
 ############
-logFormatter = logging.Formatter('[%(asctime)s] %(levelname)8s %(message)s ' +
-                                 '(%(filename)s:%(lineno)s)', datefmt='%Y-%m-%d %H:%M:%S')
-logger = logging.getLogger('nicerutil_log')
-logger.setLevel(logging.DEBUG)
-logger.propagate = False
-
-consoleHandler = logging.StreamHandler()
-consoleHandler.setFormatter(logFormatter)
-consoleHandler.setLevel(logging.WARNING)
-logger.addHandler(consoleHandler)
+logger = get_logger(__name__)
 
 
 def lightcurve(TIME, GTI, timebin=100., lcthresh=0.1, tstart=None, tend=None, outputFile=None):
@@ -64,12 +55,6 @@ def lightcurve(TIME, GTI, timebin=100., lcthresh=0.1, tstart=None, tend=None, ou
     :return: GTI, a nx2 array of GTI that corresponds to the light curve
     :rtype: pandas.DataFrame
     """
-
-    logfile = 'nicerutil_logfile' if outputFile is None else outputFile
-    fileHandler = logging.FileHandler(logfile + '.log', mode='w')
-    fileHandler.setFormatter(logFormatter)
-    fileHandler.setLevel(logging.INFO)
-    logger.addHandler(fileHandler)
 
     logger.info('\n Running lightcurve module with input parameters :'
                 '\n timebin (s) : ' + str(timebin) +

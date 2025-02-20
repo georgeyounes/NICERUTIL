@@ -56,7 +56,7 @@ To run **correctfpmsel**, all that you require is an event file
 >> correctfpmsel ni6533062201_0mpu7_cl.evt
 ```
 
-This will eliminate any 1-second TIME stamps in the FPM_SEL table of the event file that are not covered by the GTI table. You may now run **barycorr** on that event file, and it shall run through the barycentering of the the TIME column in FPM_SEL without any errors.
+This will eliminate any 1-second TIME stamps in the FPM_SEL table of the event file that are not covered by the GTI table. You may now run **barycorr** on that event file, and it shall run through the barycentering of the TIME column in FPM_SEL without any errors.
 
 ### Running **flaghighenergyflares** 
 
@@ -70,7 +70,7 @@ This script will produce a light curve in the 12-15 keV range (default parameter
 
 There are multiple flags that can help diagnose the extent of the flare contamination to your data. The -elb and -ehb control the energy range in keV within which to search for the flares. The -els and -ehs control the energy range in keV where source events supposedly lie, this is used for plotting purposes only. The -tb is the time bin of the light curve. The aggressiveness with which you wish to filter the background can be adjusted with the optional parameter --problim (or -pb); the lower the number the less aggressive the cleaning is. The -of flag(--outputFile) defines the name of the output .pdf file that shows 3-row panels, the elb-ehb keV light curve, the els-ehs keV light curve, and the FPM_OVERONLY_COUNT and COR_SAX. The flare intervals are flagged in red in all three panels.
 
-To save an xselect and NICERDAS-compatible GTI fits file, the user can provide a desirved name through the -cg argument (--creategti). Note that HEASOFT should be initialized for this to properly run).
+To save an xselect and NICERDAS-compatible GTI fits file, the user can provide a desired name through the -cg argument (--creategti). Note that HEASOFT should be initialized for this to properly run).
 
 Lastly, it really depends on your science whether, and how much, particle-background cleaning you want to apply. I personally work with sources on the faint end of things (~0.1-10 counts/s), and I care about observing the pulsed emission, which is sensitive to background light especially if the pulsed flux is low. Hence, I tend to be more conservative in my approach. Except for one source, 4U 0142+61, I tend to be more loose, since it is a relatively bright target with about 60 counts/s. So, think of your science case and the source brightness when applying this filtering.
 

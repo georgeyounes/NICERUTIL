@@ -6,6 +6,12 @@ build-backend = "setuptools.build_meta"
 name = "nicerutil"
 version = "0.0.1"
 dependencies = [
+  "astroplan",
+  "astropy",
+  "numpy",
+  "matplotlib",
+  "scipy",
+  "seaborn"
 ]
 requires-python = ">=3.8"
 authors = [
