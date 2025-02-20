@@ -22,7 +22,7 @@ import argparse
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from crimp.eventfile import EvtFileOps
+from nicerutil.eventfile import EvtFileOps
 from nicerutil.bursts import burstsearch
 from nicerutil.nicerutil_logging import get_logger
 

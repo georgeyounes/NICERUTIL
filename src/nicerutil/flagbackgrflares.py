@@ -20,8 +20,7 @@ import numpy as np
 from astropy.io import fits
 
 # Custom modules
-from crimp.eventfile import EvtFileOps
-
+from nicerutil.eventfile import EvtFileOps
 from nicerutil.nicerutil_logging import get_logger
 from nicerutil.lightcurve import lightcurve
 from nicerutil.bursts import burstsearch, mergesamebursts

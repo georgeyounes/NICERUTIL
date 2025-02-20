@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 # Custom modules
-from crimp.eventfile import EvtFileOps
+from nicerutil.eventfile import EvtFileOps
 
 import sys
 
