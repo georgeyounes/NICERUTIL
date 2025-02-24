@@ -1,13 +1,11 @@
 """
 nicermkf.py is a module to perform simple operations on nicer MKF files
-Likely to substantially change with time 
 """
 
 import numpy as np
 import pandas as pd
 from astropy.io import fits
 from astropy.time import Time
-from astroplan import moon_illumination
 
 from nicerutil.nicerutil_logging import get_logger
 
@@ -57,7 +55,7 @@ class MkfFileOps:
         timefiltered_mkf = pd.DataFrame()
         for kk, startstop in enumerate(gtilist):
             timefiltered_mkf_tmp = self.mkftable[
-                (self.mkftable['tNICERmkf'] > startstop[0]) & (self.mkftable['tNICERmkf'] < startstop[1])]
+                (self.mkftable['tNICERmkf'] >= startstop[0]) & (self.mkftable['tNICERmkf'] <= startstop[1])]
             timefiltered_mkf = pd.concat([timefiltered_mkf, timefiltered_mkf_tmp], ignore_index=True)
 
         return timefiltered_mkf
@@ -131,21 +129,6 @@ class MkfFileOps:
 
         return moonanglefiltered_mkf
 
-    def moonphasefiltermkf(self, moonphase_ll=0, moonphase_ul=100):
-        """
-        Filters the mkf file according to moon phase
-        :param moonphase_ll: moon phase lower-limit
-        :type moonphase_ll: float
-        :param moonphase_ul: moon phase upper-limit
-        :type moonphase_ul: float
-        :return: moonphasefiltered_mkf
-        :rtype: pandas.DataFrame
-        """
-        moonphasefiltered_mkf = self.mkftable.loc[((self.mkftable['MOONFRACTION'] >= moonphase_ll) &
-                                                   (self.mkftable['MOONFRACTION'] <= moonphase_ul))]
-
-        return moonphasefiltered_mkf
-
     def brightearthanglefiltermkf(self, brightearth_ll=0, brightearth_ul=180):
         """
         Filters the mkf file according to bright earth angle
@@ -198,20 +181,17 @@ class MkfFileOps:
 
         return merged_mkfs
 
-    def addmoonfraction(self):
-        """
-        Add moon illuminated fraction to mkftable
-        :return: moonadded_mkf
-        :rtype: pandas.DataFrame
-        """
-        moonfraction = moonilluminatedfraction(self.mkftable['tNICERmkf_mjd'])
-        mkftable_moonphase = self.mkftable.copy()
-        mkftable_moonphase.loc[:, 'MOONFRACTION'] = moonfraction
-
-        return mkftable_moonphase
-
 
 def readmkffile(mkffile, under='MPU_UNDERONLY_COUNT'):
+    """
+    Reading an mkf file into a pandas dataframe
+    :param mkffile: name of an mkf file
+    :type mkffile: str
+    :param under: Which per-FPM under column to read (MPU_UNDERONLY_COUNT or MPU_UNDER_COUNT)
+    :type under: str
+    :return: mkftable_df
+    :rtype: pandas.DataFrame
+    """
 
     valid_under = {'MPU_UNDERONLY_COUNT', 'MPU_UNDER_COUNT'}
     if under not in valid_under:
@@ -233,8 +213,11 @@ def readmkffile(mkffile, under='MPU_UNDERONLY_COUNT'):
     DEC_sun = tbdata.field('SUN_DEC')
     SUN_ANGLE = tbdata.field('SUN_ANGLE')
     SUNSHINE = tbdata.field('SUNSHINE')
-    KP_index = tbdata.field('KP')
     SUN_BETA = tbdata.field('BETA_ANGLE')
+    if 'KP' in hdulist['PREFILTER'].columns.names:
+        KP_index = tbdata.field('KP')
+    else:
+        KP_index = np.array([None] * len(RA_sun))
 
     if 'SUN_BODY_AZIMUTH' in hdulist['PREFILTER'].columns.names:
         # Check if sun clocking angle (SUN_BODY_AZIMUTH) in PREFILTER table as calculated with nicerl2
@@ -249,8 +232,6 @@ def readmkffile(mkffile, under='MPU_UNDERONLY_COUNT'):
         # Check if sun clocking angle (SUN_AZ) in PREFILTER table as calculated with old version of nicerutil
         AZ_SUN = tbdata.field('SUN_AZ').T
     else:
-        logger.warning('Cannot find Sun clocking angle (SUN_AZ) - if the purpose of your work is diagnostics, '
-                       'nicerutil may break')
         AZ_SUN = np.array([None] * len(RA_sun))
 
     # Moon related
@@ -274,6 +255,7 @@ def readmkffile(mkffile, under='MPU_UNDERONLY_COUNT'):
     inSAA = tbdata.field('SAA')
 
     # Instrument related
+    TOToverCount = tbdata.field('TOT_OVER_COUNT')
     corSax = tbdata.field('COR_SAX')
     MPUoverCount = tbdata.field('MPU_OVERONLY_COUNT')
 
@@ -290,32 +272,36 @@ def readmkffile(mkffile, under='MPU_UNDERONLY_COUNT'):
     mkfData_tmp = np.vstack(
         (tNICERmkf, tNICERmkf_mjd, RA_sun, DEC_sun, SUN_ANGLE, SUNSHINE, KP_index, SUN_BETA, AZ_SUN, MOON_ANGLE,
          RA_pointing, DEC_pointing, ROLL, ang_dist, elevation, brightEarth, starTrackerValid, ATT_MODE, ATT_SUBMODE_AZ,
-         ATT_SUBMODE_EL, inSAA, corSax, ATT_ANG_AZ, ATT_ANG_EL))
+         ATT_SUBMODE_EL, inSAA, corSax, ATT_ANG_AZ, ATT_ANG_EL, TOToverCount))
 
     # Reading OVER_COUNT per FPM
     # Falttening out the per MPU table, which includes FPM information and include them as single column in the overall pandas data frame
-    overCountALLFPMs = np.zeros((np.size(tNICERmkf)))
-
+    overCountperFPMs = np.empty(([56, np.size(tNICERmkf)]), dtype=object)
+    counter_det = 0
     for ii in range(7):  # MPUs
         for jj in range(8):  # FPM per MPU
-            overCountALLFPMs = np.vstack((overCountALLFPMs, MPUoverCount[:, ii, jj]))
-
-    overCountALLFPMs = overCountALLFPMs[1:]  # Removing the 0 preallocation - ugly for now
-    overCountALLFPMs = np.where(overCountALLFPMs == 0, np.nan, overCountALLFPMs)  # Replace 0 with NAN
+            overCountperFPMs[counter_det, :] = MPUoverCount[:, ii, jj]
+            counter_det += 1
+    # Converting 0s to nan
+    overCountperFPMs = np.where(overCountperFPMs == 0, np.nan, overCountperFPMs)  # Replace 0 with NAN
+    # Measuring over_onlys for summed detectors per time stamp
+    overonlycount = np.nansum(overCountperFPMs.T, axis=1)
 
     # Reading UNDER_COUNT per FPM
     # Falttening out the per MPU table, which includes FPM information and include them as single column in the overall pandas data frame
-    underCountALLFPMs = np.zeros((np.size(tNICERmkf)))
-
+    underCountperFPMs = np.empty(([56, np.size(tNICERmkf)]), dtype=object)
+    counter_det = 0
     for ii in range(7):  # MPUs
         for jj in range(8):  # FPM per MPU
-            underCountALLFPMs = np.vstack((underCountALLFPMs, MPUunderCount[:, ii, jj]))
-
-    underCountALLFPMs = underCountALLFPMs[1:]  # Removing the 0 preallocation - ugly for now
-    underCountALLFPMs = np.where(underCountALLFPMs == 0, np.nan, underCountALLFPMs)
+            underCountperFPMs[counter_det, :] = MPUunderCount[:, ii, jj]
+            counter_det += 1
+    # Converting 0s to nan
+    underCountperFPMs = np.where(underCountperFPMs == 0, np.nan, underCountperFPMs)
+    # Measuring under_onlys for summed detectors per time stamp
+    underonlycount = np.nansum(underCountperFPMs.T, axis=1)
 
     # Merging all information so far into a single mkfData
-    mkfData = np.vstack((mkfData_tmp, overCountALLFPMs, underCountALLFPMs)).T
+    mkfData = np.vstack((mkfData_tmp, overonlycount, underonlycount, overCountperFPMs, underCountperFPMs)).T
 
     # converting the above to a dataframe
     mkftable_df = pd.DataFrame(mkfData,
@@ -323,7 +309,8 @@ def readmkffile(mkffile, under='MPU_UNDERONLY_COUNT'):
                                         'KP_index', 'SUN_BETA', 'AZ_SUN', 'MOON_ANGLE', 'RA_pointing', 'DEC_pointing',
                                         'ROLL', 'ang_dist', 'elevation', 'brightEarth',
                                         'starTrackerValid', 'ATT_MODE', 'ATT_SUBMODE_AZ', 'ATT_SUBMODE_EL', 'inSAA',
-                                        'corSax', 'ATT_ANG_AZ', 'ATT_ANG_EL', 'FPM_over00',
+                                        'corSax', 'ATT_ANG_AZ', 'ATT_ANG_EL', 'TOToverCount', 'OVER_ONLY_COUNT',
+                                        'UNDER_ONLY_COUNT', 'FPM_over00',
                                         'FPM_over01', 'FPM_over02', 'FPM_over03', 'FPM_over04', 'FPM_over05',
                                         'FPM_over06', 'FPM_over07', 'FPM_over10', 'FPM_over11', 'FPM_over12',
                                         'FPM_over13', 'FPM_over14', 'FPM_over15', 'FPM_over16', 'FPM_over17',
@@ -348,17 +335,3 @@ def readmkffile(mkffile, under='MPU_UNDERONLY_COUNT'):
                                         'FPM_under62', 'FPM_under63', 'FPM_under64', 'FPM_under65', 'FPM_under66',
                                         'FPM_under67'])
     return mkftable_df
-
-
-def moonilluminatedfraction(eventtimes):
-    """
-    Calculate Moon illumination fraction
-    :param eventtimes: TIME column from a mkf (or event) file
-    :type eventtimes: numpy.ndarray
-    :return: moonfraction
-    :rtype: numpy.ndarray
-    """
-    eventtimes = Time(eventtimes, format='mjd')
-    moonfraction = moon_illumination(eventtimes, ephemeris='jpl')
-
-    return moonfraction

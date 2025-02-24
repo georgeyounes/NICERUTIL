@@ -8,16 +8,12 @@ import sys
 import argparse
 import numpy as np
 import pandas as pd
-import logging
 
 from astropy.table import Table, Column
 from astropy.io import fits
 
 sys.dont_write_bytecode = True
 
-# Log config
-############
-logger = get_logger(__name__)
 
 class EvtFileOps:
     """
@@ -64,11 +60,11 @@ class EvtFileOps:
         DATEOBS = hdulist['EVENTS'].header['DATE-OBS']
         TIMEZERO = hdulist['EVENTS'].header['TIMEZERO']
         OBS_ID = hdulist['EVENTS'].header['OBS_ID']
-        LIVETIME = hdulist['EVENTS'].header['LIVETIME']
+        ONTIME = hdulist['EVENTS'].header['ONTIME']
         MJDREF = hdulist['EVENTS'].header['MJDREFI'] + hdulist['EVENTS'].header['MJDREFF']
 
         evtFileKeyWords = {'TELESCOPE': TELESCOPE, 'INSTRUME': INSTRUME, 'OBS_ID': OBS_ID, 'TSTART': TSTART,
-                           'TSTOP': TSTOP, 'LIVETIME': LIVETIME, 'TIMESYS': TIMESYS,
+                           'TSTOP': TSTOP, 'ONTIME': ONTIME, 'TIMESYS': TIMESYS,
                            'MJDREF': MJDREF, 'TIMEZERO': TIMEZERO, 'DATEOBS': DATEOBS}
 
         return evtFileKeyWords

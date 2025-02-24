@@ -166,7 +166,7 @@ def lightcurve(TIME, GTI, timebin=100., lcthresh=0.1, tstart=None, tend=None, ou
         plotlightcurve(binnedLC, outputFile=outputFile)
         logger.info('\n Created figure of light curve : ' + outputFile + '.pdf \n')
     else:
-        logger.info('\n No figure file is created\n')
+        logger.info('\n No figure file is created \n')
 
     return binnedLC, GTI
 

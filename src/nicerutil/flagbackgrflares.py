@@ -21,11 +21,11 @@ from astropy.io import fits
 
 # Custom modules
 from nicerutil.eventfile import EvtFileOps
-from nicerutil.nicerutil_logging import get_logger
 from nicerutil.lightcurve import lightcurve
 from nicerutil.bursts import burstsearch, mergesamebursts
 from nicerutil.correctrateforfpmsel import correctrateforfpmsel
-from nicerutil.nicermkf import MkfFileOps
+from nicerutil.nicermkf import MkfFileOps, readmkffile
+from nicerutil.nicerutil_logging import get_logger
 
 sys.dont_write_bytecode = True
 
@@ -62,6 +62,19 @@ def flagbackgrflares(eventfile, mkffile, eneLow_back=12, eneHigh_back=15, timebi
     :return: flares, distinct_flares (all falgged bins and a merged list if bins are consecutive)
     :rtype: list
     """
+
+    logger.info('\n Running flagbackgrflares module with input parameters :'
+                '\n eventfile : ' + str(eventfile) +
+                '\n mkffile : ' + str(mkffile) +
+                '\n eneLow_back (keV) : ' + str(eneLow_back) +
+                '\n eneHigh_back (keV) : ' + str(eneHigh_back) +
+                '\n timebin (s) : ' + str(timebin) +
+                '\n lcthresh : ' + str(lcthresh) +
+                '\n probLim : ' + str(probLim) +
+                '\n eneLow_src (keV) : ' + str(eneLow_src) +
+                '\n eneHigh_src (keV) : ' + str(eneHigh_src) +
+                '\n outputFile : ' + str(outputFile) + '\n')
+
     # Reading data
     EF = EvtFileOps(eventfile)
     evtFileKeyWords, gtiList = EF.readGTI()
@@ -82,7 +95,7 @@ def flagbackgrflares(eventfile, mkffile, eneLow_back=12, eneHigh_back=15, timebi
     flares = burstsearch_result['bin_bursts']
 
     # Dealing with the source
-    #############################
+    #########################
     # Creating a light curve within source energy range
     dataTP_eneFlt_src = EF.filtenergy(eneLow=eneLow_src, eneHigh=eneHigh_src)
     TIME_src = dataTP_eneFlt_src['TIME'].to_numpy()
@@ -90,7 +103,7 @@ def flagbackgrflares(eventfile, mkffile, eneLow_back=12, eneHigh_back=15, timebi
     binnedLC_src_corr = correctrateforfpmsel(eventfile, binnedLC_src)
 
     # Create .txt and if desired .fits GTI files
-    #############################
+    ############################################
     if not flares.empty:
         # Merge flares separated by timebin
         distinct_flares = mergesamebursts(flares, tsameburst=1.5 * timebin)
@@ -126,27 +139,27 @@ def flagbackgrflares(eventfile, mkffile, eneLow_back=12, eneHigh_back=15, timebi
 
         f.close()
 
-        command = 'maketime ' + eventfile + ' ' + outputFile + '.fits @' + outputFile + '.txt anything anything TIME no clobber=yes'
+        command = 'maketime ' + mkffile + ' ' + outputFile + '.fits @' + outputFile + '.txt anything anything TIME no clobber=yes'
         os.system(command)
 
         # Create a simple diagnostic plot of the flares
-        #############################
+        ###############################################
         # Reading mkf data for full GTI of observation
-        timefiltered_mkf = MkfFileOps(mkffile).timefiltermkf(gtiList)
-        mkf_over_cor = timefiltered_mkf[['tNICERmkf', 'TOToverCount', 'corSax']].copy()
+        mkf_table = readmkffile(mkffile)
+        timefiltered_mkf = MkfFileOps(mkf_table).timefiltermkf(gtiList)
+        mkf_over_cor = timefiltered_mkf[['tNICERmkf', 'OVER_ONLY_COUNT', 'corSax']].copy()
         # Reading mkf data of clean GTI (flare excluded)
         hdulist_gti = fits.open(outputFile + '.fits')
         gtiList_clean = (np.vstack((hdulist_gti["STDGTI"].data.field("START"),
                                     hdulist_gti["STDGTI"].data.field("STOP")))).T
-        timefiltered_mkf_clean = MkfFileOps(mkffile).timefiltermkf(gtiList_clean)
-        mkf_over_cor_clean = timefiltered_mkf_clean[['tNICERmkf', 'TOToverCount', 'corSax']].copy()
+        timefiltered_mkf_clean = MkfFileOps(mkf_table).timefiltermkf(gtiList_clean)
+        mkf_over_cor_clean = timefiltered_mkf_clean[['tNICERmkf', 'OVER_ONLY_COUNT', 'corSax']].copy()
         # Creating the plot
         plot_flare_diagnostics(binnedLC_corr, flares, binnedLC_src_corr, mkf_over_cor, mkf_over_cor_clean,
                                outputFile=outputFile)
 
         # Calculate exposures
-        clean_exposure = len(burstsearch_result['bins_nobursts']['lcBinsRange'] *
-                             len(burstsearch_result['bins_nobursts']))
+        clean_exposure = np.sum(burstsearch_result['bins_nobursts']['lcBinsRange'])
         fractional_loss = (full_exposure - clean_exposure) / full_exposure
 
         # Adding some info to logging file about the cleaning process
@@ -160,13 +173,18 @@ def flagbackgrflares(eventfile, mkffile, eneLow_back=12, eneHigh_back=15, timebi
 
     else:
         distinct_flares = None
-        logger.info('\n No flares found.\n')
+        logger.info('\n No flares found.')
 
     return flares, distinct_flares
 
 
 def plot_flare_diagnostics(back_lightcurve, flare_lightcurve, src_lightcurve, mkf_over_cor, mkf_over_cor_clean,
                            outputFile='flare_diagnostics'):
+    """
+   Creating a plot of the flagged elevated, background events. Mainly called by flagbackgrflares function and
+   not meant to be a standalone function.
+   """
+
     fig, axs = plt.subplots(4, 1, figsize=(10, 14), dpi=200, facecolor='w', edgecolor='k', sharex=True,
                             sharey=False, gridspec_kw={'width_ratios': [1], 'height_ratios': [1, 1, 1, 1]})
     axs = axs.ravel()
@@ -216,11 +234,11 @@ def plot_flare_diagnostics(back_lightcurve, flare_lightcurve, src_lightcurve, mk
     axs[2].xaxis.offsetText.set_fontsize(14)
     axs[2].yaxis.offsetText.set_fontsize(14)
     # Plotting all TOT_OVER_COUNT
-    axs[2].errorbar(mkf_over_cor['tNICERmkf'], mkf_over_cor['TOToverCount'], xerr=1 / 2, fmt='ok')
+    axs[2].errorbar(mkf_over_cor['tNICERmkf'], mkf_over_cor['OVER_ONLY_COUNT'], xerr=1 / 2, fmt='ok')
     # Plotting the flare interval atop
     mask = np.where(~mkf_over_cor.tNICERmkf.isin(mkf_over_cor_clean.tNICERmkf), True, False)
     mkf_over_cor_flare = mkf_over_cor[mask]
-    axs[2].errorbar(mkf_over_cor_flare['tNICERmkf'], mkf_over_cor_flare['TOToverCount'], xerr=1 / 2, fmt='or')
+    axs[2].errorbar(mkf_over_cor_flare['tNICERmkf'], mkf_over_cor_flare['OVER_ONLY_COUNT'], xerr=1 / 2, fmt='or')
     axs[2].set_title(r'$\,\mathrm{TOT\_OVER\_COUNT}$', fontsize=14)
 
     # COR_SAX
@@ -234,6 +252,8 @@ def plot_flare_diagnostics(back_lightcurve, flare_lightcurve, src_lightcurve, mk
     axs[3].errorbar(mkf_over_cor['tNICERmkf'], mkf_over_cor['corSax'], xerr=1 / 2, fmt='ok')
     # Plotting the flare interval atop
     axs[3].errorbar(mkf_over_cor_flare['tNICERmkf'], mkf_over_cor_flare['corSax'], xerr=1 / 2, fmt='or')
+    axs[3].hlines(y=1.5, xmin=mkf_over_cor['tNICERmkf'].min(), xmax=mkf_over_cor['tNICERmkf'].max(),
+                  linewidth=2, color='r', linestyles='dashed')
     axs[3].set_title(r'$\,\mathrm{COR\_SAX}$', fontsize=14)
 
     #############################################################################
@@ -262,7 +282,7 @@ def main():
         description="Creating time intervals that are likely associated with high-energy background flares - built for "
                     "NICER")
     parser.add_argument("evtFile", help="Fits event file", type=str)
-    parser.add_argument("mkfFile", help="Fits nicer MKF file", type=str)
+    parser.add_argument("mkffile", help="Fits nicer MKF file", type=str)
     parser.add_argument("-elb", "--eneLow_back", help="Low energy filter in event file, default=12",
                         type=float, default=12)
     parser.add_argument("-ehb", "--eneHigh_back", help="High energy filter in event file, default=15",
@@ -281,7 +301,7 @@ def main():
                         help="name of output .pdf light curve showing flagged bins", type=str, default='flagged_flares')
     args = parser.parse_args()
 
-    flagbackgrflares(args.evtFile, args.mkfFile, args.eneLow_back, args.eneHigh_back, args.timebin, args.lcthresh,
+    flagbackgrflares(args.evtFile, args.mkffile, args.eneLow_back, args.eneHigh_back, args.timebin, args.lcthresh,
                      args.problim, args.eneLow_src, args.eneHigh_src, args.outputFile)
 
 
