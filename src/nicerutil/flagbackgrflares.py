@@ -79,6 +79,9 @@ def flagbackgrflares(eventfile, mkffile, eneLow_back=12, eneHigh_back=15, timebi
     EF = EvtFileOps(eventfile)
     evtFileKeyWords, gtiList = EF.readGTI()
     full_exposure = evtFileKeyWords['ONTIME']
+    if full_exposure==0:
+        logger.error('Exposure of event file {} is 0'.format(eventfile))
+        raise Exception('Exposure of event file {} is 0'.format(eventfile))
 
     # Dealing with the background
     #############################
