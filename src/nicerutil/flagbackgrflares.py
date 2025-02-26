@@ -57,7 +57,7 @@ def flagbackgrflares(eventfile, mkffile, eneLow_back=12, eneHigh_back=15, timebi
     :type eneLow_src: float
     :param eneHigh_src: high energy cutoff for source (for plotting purposes only default = 5 keV)
     :type eneHigh_src: float
-    :param outputFile: Name of file to save diagnostic plot, gti .txt and .fits files (default = "flagged_flares")
+    :param outputFile: Name of file to save diagnostic .pdf plot, gti _gti.txt and _gti.fits files (default = "flagged_flares")
     :type outputFile: str
     :return: flares, distinct_flares (all falgged bins and a merged list if bins are consecutive)
     :rtype: list
@@ -112,7 +112,7 @@ def flagbackgrflares(eventfile, mkffile, eneLow_back=12, eneHigh_back=15, timebi
         distinct_flares = mergesamebursts(flares, tsameburst=1.5 * timebin)
 
         # Creating a GTI file
-        f = open(outputFile + ".txt", "w+")
+        f = open(outputFile + "_gti.txt", "w+")
         # Have to think about how heasoft likes the times written
         for jj, (burst_nbr, burst_df) in enumerate(distinct_flares.items()):
             # If one flare
@@ -142,7 +142,7 @@ def flagbackgrflares(eventfile, mkffile, eneLow_back=12, eneHigh_back=15, timebi
 
         f.close()
 
-        command = 'maketime ' + mkffile + ' ' + outputFile + '.fits @' + outputFile + '.txt anything anything TIME no clobber=yes'
+        command = 'maketime ' + mkffile + ' ' + outputFile + '_gti.fits @' + outputFile + '_gti.txt anything anything TIME no clobber=yes'
         os.system(command)
 
         # Create a simple diagnostic plot of the flares
@@ -152,7 +152,7 @@ def flagbackgrflares(eventfile, mkffile, eneLow_back=12, eneHigh_back=15, timebi
         timefiltered_mkf = MkfFileOps(mkf_table).timefiltermkf(gtiList)
         mkf_over_cor = timefiltered_mkf[['tNICERmkf', 'OVER_ONLY_COUNT', 'corSax']].copy()
         # Reading mkf data of clean GTI (flare excluded)
-        hdulist_gti = fits.open(outputFile + '.fits')
+        hdulist_gti = fits.open(outputFile + '_gti.fits')
         gtiList_clean = (np.vstack((hdulist_gti["STDGTI"].data.field("START"),
                                     hdulist_gti["STDGTI"].data.field("STOP")))).T
         timefiltered_mkf_clean = MkfFileOps(mkf_table).timefiltermkf(gtiList_clean)

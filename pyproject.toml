@@ -6,13 +6,12 @@ build-backend = "setuptools.build_meta"
 name = "nicerutil"
 version = "0.1.0"
 dependencies = [
-  "astroplan",
   "astropy",
   "numpy",
   "matplotlib",
-  "scipy",
-  "seaborn"
+  "scipy"
 ]
+
 requires-python = ">=3.8"
 authors = [
   {name = "George Younes", email = "george.a.younes@nasa.gov"},
@@ -33,5 +32,3 @@ classifiers = [
 createlightcurve = "nicerutil.lightcurve:main"
 correctfpmsel = "nicerutil.correctfpmsel:main"
 flaghighenergyflares = "nicerutil.flagbackgrflares:main"
-mkfdiagnostics = "nicerutil.mkfdiagnostics:main"
-comparemkfs = "nicerutil.compare_mkfs_undershoots:main"

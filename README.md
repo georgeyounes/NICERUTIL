@@ -62,7 +62,7 @@ This will eliminate any 1-second TIME stamps in the FPM_SEL table of the event f
 In its simplest form, **flaghighenergyflares** can be run as follows: 
 
 ```bash
->> flaghighenergyflares ni6533062201_0mpu7_cl.evt
+>> flaghighenergyflares ni7020500115_0mpu7_cl.evt ni7020500115.mkf
 ```
 
 This script will produce a light curve in the 12-15 keV range (default parameters), 
@@ -70,20 +70,24 @@ where the NICER effective area is practically 0. The default time-bin used is 5 
 Any flare-like structure in the light curve is to be considered background. Under this 
 assumption, the script will search for bins with a number of counts that is too large 
 compared to the full light curve mean to be considered random Poisson fluctuation and 
-flag it as a potential background flare. An xselect and NICERDAS-compatible GTI fits file 
-that corresponds to the flagged events will be produced. A plot of the flagged events is 
-also produced. 
+flag it as a potential background flare. An xselect and NICERDAS-compatible txt and GTI 
+fits file that corresponds to the flagged events will be produced (outputFile"_gti.txt" and 
+outputFile"_gti.fits" where outputFile is "flagged_flares" by default). A plot of the flagged 
+events is also produced (outputFile".pdf") 
 
 There are multiple flags that can help diagnose the extent of the flare contamination 
 to your data. The -elb and -ehb control the energy range in keV within which to search 
 for the flares. The -els and -ehs control the energy range in keV where source events 
-supposedly lie, this is used for plotting purposes only. The -tb is the time bin of the 
-light curve. The aggressiveness with which you wish to filter the background can be 
-adjusted with the optional parameter --problim (or -pb); the lower the number the less 
+supposedly lie (default is 1 and 5, respectively), this is used for plotting purposes 
+only. The -tb is the time bin of the light curve in seconds (default is 5). The 
+aggressiveness with which you wish to filter the background can be adjusted with the 
+optional parameter --problim (or -pb=0.01 by default); the lower the number the less 
 aggressive the cleaning is. The -of flag(--outputFile) defines the name of the output 
-.fits and .txt GTI files, and a .pdf file that shows 4-row panels, the elb-ehb keV light 
-curve, the els-ehs keV light curve, the FPM_OVERONLY_COUNT, and COR_SAX. The flare 
-intervals are flagged in red in all four panels.
+_gti.fits and _gti.txt GTI files, a .txt file that define the flagged bins, and a .pdf 
+plot that shows a 4-row panels, the elb-ehb keV light curve, the els-ehs keV light curve, 
+the FPM_OVERONLY_COUNT, and COR_SAX. The flare intervals are flagged in red in all four 
+panels. The output of this particular example run, and the files required to run it,
+can be found in the folder data.
 
 It is worth noting that it really depends on your science whether, and how much, 
 particle-background cleaning you want to apply. I personally work with sources on the 
