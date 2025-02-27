@@ -242,7 +242,7 @@ def plot_flare_diagnostics(back_lightcurve, flare_lightcurve, src_lightcurve, mk
     mask = np.where(~mkf_over_cor.tNICERmkf.isin(mkf_over_cor_clean.tNICERmkf), True, False)
     mkf_over_cor_flare = mkf_over_cor[mask]
     axs[2].errorbar(mkf_over_cor_flare['tNICERmkf'], mkf_over_cor_flare['OVER_ONLY_COUNT'], xerr=1 / 2, fmt='or')
-    axs[2].set_title(r'$\,\mathrm{TOT\_OVER\_COUNT}$', fontsize=14)
+    axs[2].set_title(r'$\,\mathrm{TOT\_OVERONLY\_COUNT}$', fontsize=14)
 
     # COR_SAX
     axs[3].tick_params(axis='both', labelsize=14)

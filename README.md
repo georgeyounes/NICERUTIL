@@ -70,10 +70,12 @@ where the NICER effective area is practically 0. The default time-bin used is 5 
 Any flare-like structure in the light curve is to be considered background. Under this 
 assumption, the script will search for bins with a number of counts that is too large 
 compared to the full light curve mean to be considered random Poisson fluctuation and 
-flag it as a potential background flare. An xselect and NICERDAS-compatible txt and GTI 
-fits file that corresponds to the flagged events will be produced (outputFile"_gti.txt" and 
+flag it as a potential background flare. An xselect and NICERDAS-compatible GTI .txt and  
+.fits file that correspond to the flagged events will be produced (outputFile"_gti.txt" and 
 outputFile"_gti.fits" where outputFile is "flagged_flares" by default). A plot of the flagged 
-events is also produced (outputFile".pdf") 
+events is also produced (outputFile".pdf"). A simple log file (nicerutil.log) is output with
+essential information and any warning/error messages. **The user must initialize HEASoft 
+before running this script for the GTI .fits file to be created!**
 
 There are multiple flags that can help diagnose the extent of the flare contamination 
 to your data. The -elb and -ehb control the energy range in keV within which to search 
@@ -82,12 +84,23 @@ supposedly lie (default is 1 and 5, respectively), this is used for plotting pur
 only. The -tb is the time bin of the light curve in seconds (default is 5). The 
 aggressiveness with which you wish to filter the background can be adjusted with the 
 optional parameter --problim (or -pb=0.01 by default); the lower the number the less 
-aggressive the cleaning is. The -of flag(--outputFile) defines the name of the output 
+aggressive the cleaning is. The -of flag (--outputFile) defines the name of the output 
 _gti.fits and _gti.txt GTI files, a .txt file that define the flagged bins, and a .pdf 
 plot that shows a 4-row panels, the elb-ehb keV light curve, the els-ehs keV light curve, 
 the FPM_OVERONLY_COUNT, and COR_SAX. The flare intervals are flagged in red in all four 
-panels. The output of this particular example run, and the files required to run it,
-can be found in the folder data.
+panels. 
+
+The output of this particular example run, and the files required to run it,
+can be found in the folder data. The output diagnosis plot
+
+[flagged_flares.pdf](data%2Fflagged_flares.pdf)
+
+shows the four aforementioned panels. The red bins are the ones flagged as flares and 
+ultimately removed from the output GTI .fits file, **flagged_flares_gti.fits**. Note that 
+the flare-like bins that are present in the source energy range light curve (second panel)
+but absent from the out-of-range light curve (upper-panel) are intrinsic to the source; 
+these are magnetar bursts (the source in question is 1E 1841-045 and the observation took 
+place on August 21, at the height of its 2024 active period). 
 
 It is worth noting that it really depends on your science whether, and how much, 
 particle-background cleaning you want to apply. I personally work with sources on the 

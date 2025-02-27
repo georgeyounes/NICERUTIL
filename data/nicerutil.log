@@ -1,4 +1,4 @@
-[2025-02-26 18:24:29]     INFO 
+[2025-02-27 00:40:47]     INFO 
  Running flagbackgrflares module with input parameters :
  eventfile : ni7020500115_0mpu7_cl.evt
  mkffile : ni7020500115.mkf
@@ -11,7 +11,7 @@
  eneHigh_src (keV) : 5
  outputFile : flagged_flares
  (flagbackgrflares.py:66)
-[2025-02-26 18:24:29]     INFO 
+[2025-02-27 00:40:47]     INFO 
  Running lightcurve module with input parameters :
  timebin (s) : 5.0
  lcthresh : 0.1
@@ -19,13 +19,13 @@
  tend (MET, s) : None
  outputFile : None
  (lightcurve.py:59)
-[2025-02-26 18:24:29]     INFO 
+[2025-02-27 00:40:47]     INFO 
  No tstart or tend provided. Using full GTI table instead
  (lightcurve.py:85)
-[2025-02-26 18:24:29]     INFO 
+[2025-02-27 00:40:47]     INFO 
  No figure file is created 
  (lightcurve.py:169)
-[2025-02-26 18:24:29]     INFO 
+[2025-02-27 00:40:47]     INFO 
  Running lightcurve module with input parameters :
  timebin (s) : 5.0
  lcthresh : 0.1
@@ -33,19 +33,19 @@
  tend (MET, s) : None
  outputFile : None
  (lightcurve.py:59)
-[2025-02-26 18:24:29]     INFO 
+[2025-02-27 00:40:47]     INFO 
  No tstart or tend provided. Using full GTI table instead
  (lightcurve.py:85)
-[2025-02-26 18:24:29]     INFO 
+[2025-02-27 00:40:47]     INFO 
  No figure file is created 
  (lightcurve.py:169)
-[2025-02-26 18:24:30]     INFO 
+[2025-02-27 00:40:49]     INFO 
  Cleaning statistics: (flagbackgrflares.py:169)
-[2025-02-26 18:24:30]     INFO 
+[2025-02-27 00:40:49]     INFO 
  Average rate of background light curve before any cleaning : 2.0892348572125967 (flagbackgrflares.py:170)
-[2025-02-26 18:24:30]     INFO 
+[2025-02-27 00:40:49]     INFO 
  Average rate of background light curve after cleaning : 0.2097290882612118 (flagbackgrflares.py:172)
-[2025-02-26 18:24:30]     INFO 
+[2025-02-27 00:40:49]     INFO 
  Full exposure : 3939
  Clean exposure : 3718.0
  Fractional loss : 0.056105610561056105 (flagbackgrflares.py:174)
