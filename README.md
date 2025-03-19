@@ -9,7 +9,19 @@ background flares caused by high-energy particles. This component in NICER is kn
 [this page](https://heasarc.gsfc.nasa.gov/docs/nicer/analysis_threads/flares/).
 
 
-Another script called **correctfpmsel** will filter the FPM_SEL table in an event file so that its time stamps (TIME column) fall within the GTIs. This is not always the case and, when some of the time stamps in FPM_SEL aren't covered by the orbit file of the observation, it causes the HEASoft barycentering routine BARYCORR to fail when attempting to barycenter the FPM_SEL TIME column. For this reason, BARYCORR, in its current version, skips over the barycentering of the TIME column in the FPM_SEL table of an event file. Below, I will summarize how to regain the BARYCORR ability to apply barycenteric correction to the FPM_SEL table, and the use of the script **correctfpmsel**.
+Another script called **correctfpmsel** will filter the FPM_SEL table in an event file so that its 
+time stamps (TIME column) fall within the GTIs. This is not always the case and, when some of the 
+time stamps in FPM_SEL aren't covered by the orbit file of the observation, it causes the HEASoft 
+barycentering routine BARYCORR to fail when attempting to barycenter the FPM_SEL TIME column. For 
+this reason, BARYCORR, in its current version, skips over the barycentering of the TIME column in 
+the FPM_SEL table of an event file. Below, I will summarize how to regain the BARYCORR ability to 
+apply barycenteric correction to the FPM_SEL table, and the use of the
+script **correctfpmsel**.
+
+Just in case you are not aware of it, there is a much more extensive
+nicer data analysis tools developed by other members of the NICER
+team, primarly Paul Ray, which I highly recommend you to check
+out. This can be accessed here [https://github.com/paulray/NICERsoft](https://github.com/paulray/NICERsoft)
 
 ## Acknowledgements
 
@@ -38,15 +50,28 @@ of required and optional arguments with the usual '-h' option. Here we shall cov
 
 ### Running correctfpmsel
 
-**correctfpmsel** is really only useful if you wish to barycenter-correct the TIME column in the FPM_SEL table of a NICER event file, and only in the cases when the said TIME column has some time stamps outside of the valid orbit file for the given observation, which causes BARYCORR to fail. Note that in its current form, BARYCORR skips over barycentering the TIME column of the FPM_SEL table (since [HEASoft version 6.31](https://heasarc.gsfc.nasa.gov/FTP/software/ftools/release/archive/Release_Notes_6.31)). Hence, we first need to re-enable barycentering of the TIME column in the FPM_SEL table.
+**correctfpmsel** is really only useful if you wish to barycenter-correct the TIME column in the 
+FPM_SEL table of a NICER event file, and only in the cases when the said TIME column has some time 
+stamps outside of the valid orbit file for the given observation, which causes BARYCORR to fail. 
+Note that in its current form, BARYCORR skips over barycentering the TIME column of the FPM_SEL 
+table (since [HEASoft version 6.31](https://heasarc.gsfc.nasa.gov/FTP/software/ftools/release/archive/Release_Notes_6.31)). Hence, we first need to re-enable barycentering of the 
+TIME column in the FPM_SEL table.
 
 #### Enabling FPM_SEL barycentering through BARYCORR
 
-If you wish to allow the heasoft tool BARYCORR to perform barycentering on the FPM_SEL table of a NICER event file, you can follow these steps: (1) in axBary.c, which can be found under heasoft-version/heagen/barycorr/, remove the block that states that "always ignore NICER FPM_SEL extension" (code on line 577), (2) navigate to heasoft-version/heagen/your-build/BUILD_DIR, and (3) run **./hmake** and then **./hmake install**.
+If you wish to allow the heasoft tool BARYCORR to perform barycentering on the FPM_SEL table of a 
+NICER event file, you can follow these steps: (1) in axBary.c, which can be found under 
+heasoft-version/heagen/barycorr/, remove the block that states that "always ignore NICER FPM_SEL 
+extension" (code on line 577), (2) navigate to heasoft-version/heagen/your-build/BUILD_DIR, and 
+(3) run **./hmake** and then **./hmake install**.
 
-In the above, heasoft-version directory refers to the version number, e.g., heasoft-6.33.1. Also, the your-build directory refers to your machine's architecture, e.g., aarch64-apple-darwin23.4.0. Your BARYCORR should now barycenter-correct the TIME column in the FPM_SEL table.
+In the above, heasoft-version directory refers to the version number, e.g., heasoft-6.33.1. Also, 
+the your-build directory refers to your machine's architecture, e.g., aarch64-apple-darwin23.4.0. 
+Your BARYCORR should now barycenter-correct the TIME column in the FPM_SEL table.
 
-For the most part, BARYCORR will run without any errors. However, there are few instances when that is not the case, and BARYCORR exits with an error (something like TIME outside of orbit file). The tool **correctfpmsel** will fix this issue by filtering out these time stamps.
+For the most part, BARYCORR will run without any errors. However, there are few instances when 
+that is not the case, and BARYCORR exits with an error (something like TIME outside of orbit file).
+The tool **correctfpmsel** will fix this issue by filtering out these time stamps.
 
 
 To run **correctfpmsel**, all that you require is an event file
@@ -55,7 +80,9 @@ To run **correctfpmsel**, all that you require is an event file
 >> correctfpmsel ni6533062201_0mpu7_cl.evt
 ```
 
-This will eliminate any 1-second TIME stamps in the FPM_SEL table of the event file that are not covered by the GTI table. You may now run **barycorr** on that event file, and it shall run through the barycentering of the TIME column in FPM_SEL without any errors.
+This will eliminate any 1-second TIME stamps in the FPM_SEL table of the event file that are not 
+covered by the GTI table. You may now run **barycorr** on that event file, and it shall run through 
+the barycentering of the TIME column in FPM_SEL without any errors.
 
 ### Running **flaghighenergyflares** 
 
@@ -70,7 +97,7 @@ where the NICER effective area is practically 0. The default time-bin used is 5 
 Any flare-like structure in the light curve is to be considered background. Under this 
 assumption, the script will search for bins with a number of counts that is too large 
 compared to the full light curve mean to be considered random Poisson fluctuation and 
-flag it as a potential background flare. An xselect and NICERDAS-compatible GTI .txt and  
+flag it as a potential background flare. A xselect and NICERDAS-compatible GTI .txt and  
 .fits file that correspond to the flagged events will be produced (outputFile"_gti.txt" and 
 outputFile"_gti.fits" where outputFile is "flagged_flares" by default). A plot of the flagged 
 events is also produced (outputFile".pdf"). A simple log file (nicerutil.log) is output with
