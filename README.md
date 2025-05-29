@@ -8,7 +8,6 @@ background flares caused by high-energy particles. This component in NICER is kn
 (precipitating electrons). For more information, I highly recommend reading 
 [this page](https://heasarc.gsfc.nasa.gov/docs/nicer/analysis_threads/flares/).
 
-
 Another script called **correctfpmsel** will filter the FPM_SEL table in an event file so that its 
 time stamps (TIME column) fall within the GTIs. This is not always the case and, when some of the 
 time stamps in FPM_SEL aren't covered by the orbit file of the observation, it causes the HEASoft 
@@ -17,6 +16,24 @@ this reason, BARYCORR, in its current version, skips over the barycentering of t
 the FPM_SEL table of an event file. Below, I will summarize how to regain the BARYCORR ability to 
 apply barycenteric correction to the FPM_SEL table, and the use of the
 script **correctfpmsel**.
+
+There is now a module that allows the user to download nicer data from AWS (get_nicer_aws.py). It 
+can be accessed through the CLI **getniceraws**. The usual **getniceraws -h** will provide a list 
+of arguments. Example usage:
+
+```bash
+getniceraws -sn "1E 1547.0-5408" -od ./1e1547/nicer/ -s 2022-12-29 -e 2023-07-25
+```
+
+where -sn (--srcname) and -od (--outdir) are required arguments, and represent the name of the source and the output
+directory where the observation ids will be downloaded. The -sn should match a known source name; it will be parsed by
+astropy SkyCoord for RA and DEC coordinates, which will be passed to Heasarc().query_region. Otherwise, the user could
+provide the RA and DEC directly through the argument -rd (--radec; e.g., -rd 85.046667 -69.331722; instead of -sn!). 
+The -od is where the observation ids will be downloaded. Note that the script does not create any directories by default
+(e.g. srcname), except the observation ids themselves. If in the -od an observation_id directory exists and is not
+empty, the script will skip the download of that observation. Finally, the -s (--start) and -e (--end) are optional 
+arguments and allow the user to specify time range for the download, rather than the full nicer list of observations 
+(default).
 
 Just in case you are not aware of it, there is a much more extensive
 nicer data analysis tools developed by other members of the NICER
