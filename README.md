@@ -27,13 +27,16 @@ getniceraws -sn "1E 1547.0-5408" -od ./1e1547/nicer/ -s 2022-12-29 -e 2023-07-25
 
 where -sn (--srcname) and -od (--outdir) are required arguments, and represent the name of the source and the output
 directory where the observation ids will be downloaded. The -sn should match a known source name; it will be parsed by
-astropy SkyCoord for RA and DEC coordinates, which will be passed to Heasarc().query_region. Otherwise, the user could
-provide the RA and DEC directly through the argument -rd (--radec; e.g., -rd 85.046667 -69.331722; instead of -sn!). 
-The -od is where the observation ids will be downloaded. Note that the script does not create any directories by default
-(e.g. srcname), except the observation ids themselves. If in the -od an observation_id directory exists and is not
-empty, the script will skip the download of that observation. Finally, the -s (--start) and -e (--end) are optional 
-arguments and allow the user to specify time range for the download, rather than the full nicer list of observations 
-(default).
+astropy SkyCoord for RA and DEC coordinates, which will be passed to Heasarc().query_region (from the package 
+astroquery). Otherwise, the user could provide the RA and DEC directly through the argument -rd (--radec; 
+e.g., -rd 85.046667 -69.331722) instead of -sn. The -od is where the observation ids will be downloaded. Note that the 
+script does not create any directories by default (e.g. srcname), except the observation ids themselves. If in the -od 
+an observation_id directory exists and is not empty, the script will skip the download of that observation. Finally, 
+the -s (--start) and -e (--end) are optional arguments and allow the user to specify time range for the download, 
+rather than the full nicer list of observations (default). Note that you will need to download the [AWS CLI 
+tool](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html), which can be downloaded here. 
+
+
 
 Just in case you are not aware of it, there is a much more extensive
 nicer data analysis tools developed by other members of the NICER
@@ -44,7 +47,6 @@ out. This can be accessed here [https://github.com/paulray/NICERsoft](https://gi
 
 I am grateful to the discussions I have had with Craig Markwardt, Jeremy Hare, and the rest of the 
 NICER team at Goddard Space Flight Center on NICER data, best analysis practices, and pitfalls.
-
 
 ## Installation
 
