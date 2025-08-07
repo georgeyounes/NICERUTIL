@@ -93,7 +93,42 @@ def download_obs_from_aws(obsid, year_month, output_base):
     return
 
 
+def get_data(srcname, radius, radec, start, end, outdir):
+
+    # Query NICER observations
+    if srcname:
+        result_table = query_nicer_observations(srcname=srcname, radius_deg=radius)
+    else:
+        ra, dec = radec
+        result_table = query_nicer_observations(ra=ra, dec=dec, radius_deg=radius)
+
+    if len(result_table) == 0:
+        print("No observations found for the specified source.")
+        return []
+
+    # Filter by time range
+    timeflt_table = filter_by_date(result_table, start, end)
+    if len(timeflt_table) == 0:
+        print("No observations found in that time range.")
+        return []
+    elif len(timeflt_table) > 1:
+        print("Observations found for source in specified time range: \n")
+        print(timeflt_table)
+        print("\n")
+
+    # Get YYYY_MM strings
+    year_months = get_year_month_from_mjd(timeflt_table['time'].value)
+
+    # Download each observation
+    for row, ym in zip(timeflt_table, year_months):
+        download_obs_from_aws(obsid=row['obsid'],
+                              year_month=ym,
+                              output_base=outdir)
+    return [outdir+'/'+str(oid) for oid in timeflt_table['obsid']]
+
+
 def main():
+
     parser = argparse.ArgumentParser(
         description="Download NICER observations from AWS for a given sourcename or coordinates and time range."
     )
@@ -111,36 +146,13 @@ def main():
                         help="End date (YYYY-MM-DD; default: 2032-12-31)")
     args = parser.parse_args()
 
-    # Query NICER observations
-    if args.srcname:
-        result_table = query_nicer_observations(srcname=args.srcname, radius_deg=args.radius)
-    else:
-        ra, dec = args.radec
-        result_table = query_nicer_observations(ra=ra, dec=dec, radius_deg=args.radius)
+    
+    get_data(args.srcname, args.radius, args.radec, args.start, args.end, args.outdir)
 
-    if len(result_table) == 0:
-        print("No observations found for the specified source.")
-        return
-
-    # Filter by time range
-    timeflt_table = filter_by_date(result_table, args.start, args.end)
-    if len(timeflt_table) == 0:
-        print("No observations found in that time range.")
-        return
-    elif len(timeflt_table) > 1:
-        print("Observations found for source in specified time range: \n")
-        print(timeflt_table)
-        print("\n")
-
-    # Get YYYY_MM strings
-    year_months = get_year_month_from_mjd(timeflt_table['time'].value)
-
-    # Download each observation
-    for row, ym in zip(timeflt_table, year_months):
-        download_obs_from_aws(obsid=row['obsid'],
-                              year_month=ym,
-                              output_base=args.outdir)
 
 
 if __name__ == "__main__":
     main()
+
+
+
