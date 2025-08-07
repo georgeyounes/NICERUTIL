@@ -3,7 +3,7 @@ from nicerutil.get_nicer_aws import get_data
 from convenience import * 
 
 
-def get_nicer_data(datadir,nm,radius,ra,dec,start,end,make_toas,verbose=False):
+def get_nicer_data(datadir,nm,radius,ra,dec,start,end,verbose=False):
 
     mkdir(os.path.join(datadir,'nicer'))
     oids = get_data('', radius, (ra, dec), start, end, os.path.join(datadir,'nicer'))

@@ -28,6 +28,8 @@ def process_magnetar(model, srcname, datadir,
             nm = ln.split()[1].rstrip('\n') 
     if srcname is not None:
         nm = srcname
+    else:
+        srcname = nm
     pos = SkyCoord(ra,dec,unit=('hourangle','deg'))
     ra, dec = pos.ra.value, pos.dec.value
 

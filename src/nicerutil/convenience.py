@@ -43,8 +43,8 @@ def mv(fil,newloc,verbose=False):
 def cleanup(sourcename):
     mvstr = ""
     for glb in ["flagged_flares.txt", "nicerutil.log", f"{sourcename}*", 
-                "ToA*", "merged*", "evt_fils.txt","*fit"]:
-        if 'par' not in glb and len(glob(glb))>0:
+                "ToA*", "merged*", "evt_fils*","*fit"]:
+        if 'par' not in glb and len(glob(glb))>0 and not os.path.isdir(glb):
             mvstr += f" {glb}"
     if mvstr != "":
         execute(f"mv {mvstr} {sourcename}/results")
