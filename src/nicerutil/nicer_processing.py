@@ -5,8 +5,8 @@ from convenience import *
 
 def get_nicer_data(datadir,nm,radius,ra,dec,start,end,make_toas,verbose=False):
 
-    mkdir(os.path.join(datadir,nm,'nicer'))
-    oids = get_data('', radius, (ra, dec), start, end, os.path.join(datadir,nm,'nicer'))
+    mkdir(os.path.join(datadir,'nicer'))
+    oids = get_data('', radius, (ra, dec), start, end, os.path.join(datadir,'nicer'))
 
     for oid_dir in oids:
         oid = oid_dir.split('/')[-1]

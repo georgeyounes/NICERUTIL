@@ -4,10 +4,9 @@ import os
 import shutil
 
 
-def build_directories(datadir,srcname):
-    for fld in [datadir,'results']:
-        mkdir(fld)
-        mkdir(f"{fld}/{srcname}")
+def build_directories(srcname):
+    mkdir(srcname)
+    mkdir(f"{srcname}/results")
 
 def mkdir(newdir,verbose=False):
     if not os.path.exists(newdir):
@@ -16,7 +15,7 @@ def mkdir(newdir,verbose=False):
             print(f"{newdir} created")
     else:
         if verbose:
-            print(f"{newdir} alredy exists")
+            print(f"{newdir} already exists")
 
 def cd(newdir, createdir=False, verbose=False):
     if not os.path.isdir(newdir) and createdir:
@@ -48,5 +47,5 @@ def cleanup(sourcename):
         if 'par' not in glb and len(glob(glb))>0:
             mvstr += f" {glb}"
     if mvstr != "":
-        execute(f"mv {mvstr} results/{sourcename}")
+        execute(f"mv {mvstr} {sourcename}/results")
 

@@ -32,14 +32,14 @@ def process_magnetar(model, srcname, datadir,
     ra, dec = pos.ra.value, pos.dec.value
 
     if datadir is None:
-        datadir = "rawdata"
+        datadir = srcname
 
-    build_directories(datadir,nm)
+    build_directories(datadir)
     headdir = os.getcwd()
     if do_nicer:
         get_nicer_data(datadir,nm,radius,ra,dec,start,end,verbose=True)
     if do_xmm:
-        get_xmm_data(nm, pos, os.path.join(headdir,datadir,nm), start, end, 
+        get_xmm_data(nm, pos, os.path.join(headdir,datadir), start, end, 
                      radius, elow=elow, ehigh=ehigh, extent=extent,
                      verbose=True)
     cd(headdir)
@@ -55,7 +55,7 @@ if __name__ == "__main__":
     parser.add_argument("-n", type=str, default=None,
                         help="name of source (default read from par file)")
     parser.add_argument("-o", type=str, default=None,
-                        help="output directory to store data (default rawdata/[src name])")
+                        help="output directory to store data (default [src name])")
     parser.add_argument("-r", type=float, default=0.05,
                         help="radius of search for observations [deg], default 0.05")
     parser.add_argument("-s", type=str, default="2017-01-01",
