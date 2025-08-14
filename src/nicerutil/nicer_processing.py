@@ -1,6 +1,6 @@
 import os
 from nicerutil.get_nicer_aws import get_data
-from convenience import * 
+from nicerutil.convenience import * 
 
 
 def get_nicer_data(datadir,nm,radius,ra,dec,start,end,verbose=False):

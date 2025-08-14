@@ -8,7 +8,7 @@ from astropy.io import fits
 from astropy.table import Table
 from astroquery.heasarc import Heasarc
 from subprocess import call
-from convenience import * 
+from nicerutil.convenience import * 
 import shutil
 
 

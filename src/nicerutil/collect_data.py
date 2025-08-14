@@ -5,9 +5,9 @@ from astropy.coordinates import SkyCoord
 from glob import glob
 from nicerutil.get_nicer_aws import get_data
 from subprocess import call
-from xmm_processing import get_xmm_data
-from nicer_processing import get_nicer_data
-from convenience import *
+from nicerutil.xmm_processing import get_xmm_data
+from nicerutil.nicer_processing import get_nicer_data
+from nicerutil.convenience import *
  
 
 
@@ -48,8 +48,7 @@ def process_magnetar(model, srcname, datadir,
     cleanup(nm)
                 
 
-
-if __name__ == "__main__":
+def download_wrapper():
     parser = argparse.ArgumentParser(description="Download NICER data for a provided source " + \
                                                  "and conduct standard TOA generation and timing")
     parser.add_argument("-m", type=str, required=True,
@@ -86,4 +85,6 @@ if __name__ == "__main__":
                      args.i, args.c, 
                      args.N, args.x)
 
+if __name__ == "__main__":
+    download_wrapper()
 
