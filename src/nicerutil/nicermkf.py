@@ -5,7 +5,6 @@ nicermkf.py is a module to perform simple operations on nicer MKF files
 import numpy as np
 import pandas as pd
 from astropy.io import fits
-from astropy.time import Time
 
 from nicerutil.nicerutil_logging import get_logger
 
@@ -35,7 +34,7 @@ class MkfFileOps:
         sunanglefiltermkf(): filters table according to sun angle
         """
 
-    def __init__(self, mkftable: str):
+    def __init__(self, mkftable: pd.DataFrame):
         """
         Operates on nicer mkf file
         :param mkftable: name of the mkf table as read from nicermkf.readmkf function
@@ -182,13 +181,15 @@ class MkfFileOps:
         return merged_mkfs
 
 
-def readmkffile(mkffile, under='MPU_UNDERONLY_COUNT'):
+def readmkffile(mkffile, under='MPU_UNDERONLY_COUNT', over='MPU_OVERONLY_COUNT'):
     """
     Reading an mkf file into a pandas dataframe
     :param mkffile: name of an mkf file
     :type mkffile: str
     :param under: Which per-FPM under column to read (MPU_UNDERONLY_COUNT or MPU_UNDER_COUNT)
     :type under: str
+    :param over: Which per-FPM over column to read (MPU_OVERONLY_COUNT or MPU_OVER_COUNT)
+    :type over: str
     :return: mkftable_df
     :rtype: pandas.DataFrame
     """
@@ -196,6 +197,10 @@ def readmkffile(mkffile, under='MPU_UNDERONLY_COUNT'):
     valid_under = {'MPU_UNDERONLY_COUNT', 'MPU_UNDER_COUNT'}
     if under not in valid_under:
         raise ValueError("readmkffile: under input parameter must be one of %r." % valid_under)
+
+    valid_over = {'MPU_OVERONLY_COUNT', 'MPU_OVER_COUNT'}
+    if over not in valid_over:
+        raise ValueError("readmkffile: over input parameter must be one of %r." % valid_over)
 
     # open mkf file
     hdulist = fits.open(mkffile)
@@ -257,12 +262,16 @@ def readmkffile(mkffile, under='MPU_UNDERONLY_COUNT'):
     # Instrument related
     TOToverCount = tbdata.field('TOT_OVER_COUNT')
     corSax = tbdata.field('COR_SAX')
-    MPUoverCount = tbdata.field('MPU_OVERONLY_COUNT')
 
     if under == 'MPU_UNDERONLY_COUNT':
         MPUunderCount = tbdata.field('MPU_UNDERONLY_COUNT')
     else:
         MPUunderCount = tbdata.field('MPU_UNDER_COUNT')
+
+    if over == 'MPU_OVERONLY_COUNT':
+        MPUoverCount = tbdata.field('MPU_OVERONLY_COUNT')
+    else:
+        MPUoverCount = tbdata.field('MPU_OVER_COUNT')
 
     # ATTITUDE AND POINTING COLUMNS
     ATT_ANG_AZ = tbdata.field('ATT_ANG_AZ')

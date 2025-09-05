@@ -9,7 +9,7 @@ stamps fall within the observation orbit file.
 import argparse
 import numpy as np
 from astropy.io import fits
-from astropy.table import Table, Column
+from astropy.table import Table
 
 import sys
 
@@ -55,9 +55,8 @@ def correctfpmsel(eventfile):
 
     # Changing types to match those of the original
     fpmsel_table_flt['TIME'].info.dtype = '>f8'
-    fpmsel_table_flt['FPM_ON'] = fpmsel_table_flt['FPM_ON'].astype(
-        'B')  # I have a vague idea why the above does not work on FPM_ON and FPM_SEL but this works
-    fpmsel_table_flt['FPM_SEL'] = fpmsel_table_flt['FPM_SEL'].astype(np.int16)
+    fpmsel_table_flt['FPM_SEL'] = fpmsel_table_flt['FPM_SEL'].round().astype(np.int16)
+    fpmsel_table_flt['FPM_ON'] = fpmsel_table_flt['FPM_ON'].round().astype('B')
 
     # Updating event file
     newhdulEFPH = fits.BinTableHDU(data=fpmsel_table_flt, header=fpmsel_hdr, name='FPM_SEL')

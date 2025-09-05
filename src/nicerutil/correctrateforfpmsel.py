@@ -1,5 +1,5 @@
 """
-# correctfpmsel.py
+correctrateforfpmsel.py is a module that correct the count rate in a light curve for the number of selected FPMs
 """
 
 import numpy as np
@@ -17,7 +17,6 @@ def correctrateforfpmsel(eventfile, binnedlightcurve):
     # Reading the selected FPM per 1-second interval from event file
     EF = EvtFileOps(eventfile)
     _, FPMSEL_table_condensed = EF.read_fpmsel()
-
     lcBins = binnedlightcurve["lcBins"].to_numpy()
     lcBinsRange = binnedlightcurve["lcBinsRange"].to_numpy()
     ctrate = binnedlightcurve["ctrate"].to_numpy()

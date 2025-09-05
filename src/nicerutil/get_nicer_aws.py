@@ -39,6 +39,7 @@ def query_nicer_observations(srcname=None, ra=None, dec=None, radius_deg=0.2):
 
 
 def filter_by_date(obs_table, start_date, end_date):
+    print(start_date)
     """Filter Astropy table between two ISO date strings."""
     t_start = Time(start_date).mjd
     t_end = Time(end_date).mjd
@@ -93,14 +94,16 @@ def download_obs_from_aws(obsid, year_month, output_base):
     return
 
 
-def get_data(srcname, radius, radec, start, end, outdir):
+def get_data(radius, start, end, srcname=None, radec=None, outdir='./'):
 
     # Query NICER observations
-    if srcname:
+    if srcname is not None:
         result_table = query_nicer_observations(srcname=srcname, radius_deg=radius)
-    else:
+    elif radec is not None:
         ra, dec = radec
         result_table = query_nicer_observations(ra=ra, dec=dec, radius_deg=radius)
+    else:
+        raise ValueError("Provide either srcname or RA/DEC.")
 
     if len(result_table) == 0:
         print("No observations found for the specified source.")
@@ -109,7 +112,7 @@ def get_data(srcname, radius, radec, start, end, outdir):
     # Filter by time range
     timeflt_table = filter_by_date(result_table, start, end)
     if len(timeflt_table) == 0:
-        print("No observations found in that time range.")
+        print("No observations found in the specified time range.")
         return []
     elif len(timeflt_table) > 1:
         print("Observations found for source in specified time range: \n")
@@ -128,7 +131,6 @@ def get_data(srcname, radius, radec, start, end, outdir):
 
 
 def main():
-
     parser = argparse.ArgumentParser(
         description="Download NICER observations from AWS for a given sourcename or coordinates and time range."
     )
@@ -145,9 +147,8 @@ def main():
     parser.add_argument("-e", "--end", type=str, default="2032-12-31",
                         help="End date (YYYY-MM-DD; default: 2032-12-31)")
     args = parser.parse_args()
-
     
-    get_data(args.srcname, args.radius, args.radec, args.start, args.end, args.outdir)
+    get_data(args.radius, args.start, args.end, args.srcname, args.radec, args.outdir)
 
 
 

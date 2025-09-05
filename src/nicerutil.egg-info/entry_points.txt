@@ -1,0 +1,7 @@
+[console_scripts]
+correctfpmsel = nicerutil.correctfpmsel:main
+createlightcurve = nicerutil.lightcurve:main
+flaghighenergyflares = nicerutil.flagbackgrflares:main
+getniceraws = nicerutil.get_nicer_aws:main
+merge_event_files = nicerutil.mergeeventfiles:main
+nicer_process_source = nicerutil.nicer_processing:main

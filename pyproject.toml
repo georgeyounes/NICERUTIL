@@ -10,7 +10,8 @@ dependencies = [
   "numpy",
   "matplotlib",
   "scipy",
-  "astroquery"
+  "astroquery",
+  "pyyaml"
 ]
 
 requires-python = ">=3.8"
@@ -34,4 +35,5 @@ createlightcurve = "nicerutil.lightcurve:main"
 correctfpmsel = "nicerutil.correctfpmsel:main"
 flaghighenergyflares = "nicerutil.flagbackgrflares:main"
 getniceraws = "nicerutil.get_nicer_aws:main"
-collect_data = "nicerutil.collect_data:download_wrapper"
+nicer_process_source = "nicerutil.nicer_processing:main"
+merge_event_files = "nicerutil.mergeeventfiles:main"

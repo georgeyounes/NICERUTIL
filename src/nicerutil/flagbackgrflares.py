@@ -4,12 +4,11 @@ https://heasarc.gsfc.nasa.gov/docs/nicer/analysis_threads/flares/). Given
 a NICER event file and a mkf file, this module will create a light curve in
 the energy range 12-15 keV with a time-bin of 5 seconds (both of which optional
 inputs), where NICER effective area is practically 0. It will then search for bins
-with a numberof counts that is too large to be considered random Poisson fluctuation
-and flagit as a potential background flare. It will also produce an xselect and
+with a number of counts that is too large to be considered random Poisson fluctuation
+and flagit as a potential background flare. It will also produce a xselect and
 NICERDAS-compatible GTI that corresponds to the flagged events. A plot of the
-flagged events is also produced. Some other optional parameters are
+flagged events is also produced. Other optional parameters are allowed.
 
-|
 Warning: make sure you have initialized heasoft before running this module
 """
 import matplotlib.pyplot as plt
@@ -80,8 +79,8 @@ def flagbackgrflares(eventfile, mkffile, eneLow_back=12, eneHigh_back=15, timebi
     evtFileKeyWords, gtiList = EF.readGTI()
     full_exposure = evtFileKeyWords['ONTIME']
     if full_exposure==0:
-        logger.error('Exposure of event file {} is 0'.format(eventfile))
-        raise Exception('Exposure of event file {} is 0'.format(eventfile))
+        logger.warning('Exposure of event file {} is 0'.format(eventfile))
+        return None, None
 
     # Dealing with the background
     #############################
@@ -90,7 +89,7 @@ def flagbackgrflares(eventfile, mkffile, eneLow_back=12, eneHigh_back=15, timebi
     TIME_back = dataTP_eneFlt['TIME'].to_numpy()
 
     # Create light curve
-    binnedLC, _ = lightcurve(TIME_back, gtiList, timebin=timebin, lcthresh=lcthresh)
+    binnedLC, _ = lightcurve(TIME_back, gtiList, timebin=timebin, lcthresh=lcthresh, outputFile=f"{outputFile}_bg_lc")
     binnedLC_corr = correctrateforfpmsel(eventfile, binnedLC)
 
     # FLare search
@@ -102,18 +101,18 @@ def flagbackgrflares(eventfile, mkffile, eneLow_back=12, eneHigh_back=15, timebi
     # Creating a light curve within source energy range
     dataTP_eneFlt_src = EF.filtenergy(eneLow=eneLow_src, eneHigh=eneHigh_src)
     TIME_src = dataTP_eneFlt_src['TIME'].to_numpy()
-    binnedLC_src, _ = lightcurve(TIME_src, gtiList, timebin=timebin, lcthresh=lcthresh)
+    binnedLC_src, _ = lightcurve(TIME_src, gtiList, timebin=timebin, lcthresh=lcthresh, outputFile=f"{outputFile}_src_lc")
     binnedLC_src_corr = correctrateforfpmsel(eventfile, binnedLC_src)
 
-    # Create .txt and if desired .fits GTI files
-    ############################################
+    # Create .txt and .fits GTI files
+    #################################
     if not flares.empty:
         # Merge flares separated by timebin
         distinct_flares = mergesamebursts(flares, tsameburst=1.5 * timebin)
 
         # Creating a GTI file
         f = open(outputFile + "_gti.txt", "w+")
-        # Have to think about how heasoft likes the times written
+        # Heasoft likes the times written a certain way
         for jj, (burst_nbr, burst_df) in enumerate(distinct_flares.items()):
             # If one flare
             if (jj == 0) and (len(distinct_flares) == 1):
@@ -148,7 +147,7 @@ def flagbackgrflares(eventfile, mkffile, eneLow_back=12, eneHigh_back=15, timebi
         # Create a simple diagnostic plot of the flares
         ###############################################
         # Reading mkf data for full GTI of observation
-        mkf_table = readmkffile(mkffile)
+        mkf_table = readmkffile(mkffile, over='MPU_OVER_COUNT')
         timefiltered_mkf = MkfFileOps(mkf_table).timefiltermkf(gtiList)
         mkf_over_cor = timefiltered_mkf[['tNICERmkf', 'OVER_ONLY_COUNT', 'corSax']].copy()
         # Reading mkf data of clean GTI (flare excluded)

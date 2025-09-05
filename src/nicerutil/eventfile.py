@@ -5,11 +5,9 @@ This is a simpler version of the eventfile.py package in CRIMP
 """
 
 import sys
-import argparse
 import numpy as np
 import pandas as pd
 
-from astropy.table import Table, Column
 from astropy.io import fits
 
 sys.dont_write_bytecode = True
@@ -67,19 +65,18 @@ class EvtFileOps:
                            'TSTOP': TSTOP, 'ONTIME': ONTIME, 'TIMESYS': TIMESYS,
                            'MJDREF': MJDREF, 'TIMEZERO': TIMEZERO, 'DATEOBS': DATEOBS}
 
+        hdulist.close()
+
         return evtFileKeyWords
 
     #################################################################
     def read_fpmsel(self):
         """
         Reads FPM_SEL extension from a NICER event file
-        :return: FPMSEL_table_condensed - same as FPM_SEL but with total number of detectors per time stamp
-        :rtype: pandas.DataFrame
+        :return: FPMSEL_table, FPMSEL_table_condensed - Full FPM_SEL table as a hdulist and a condensed version
+        as a pandas dataframe with total number of detectors "selected" and "on" per time stamp
+        :rtype: astropy.io.fits.HDUList, pandas.DataFrame
         """
-        evtFileKeyWords = self.readEF()
-        TELESCOPE = evtFileKeyWords["TELESCOPE"]
-
-
         hdulist = fits.open(self.evtFile)
 
         # Reading the table
@@ -98,6 +95,8 @@ class EvtFileOps:
 
         FPMSEL_table_condensed = pd.DataFrame(np.vstack((TIME, totfpmsel, totfpmon)).T, columns=['TIME', 'TOTFPMSEL', 'TOTFPMON'])
 
+        hdulist.close()
+
         return FPMSEL_table, FPMSEL_table_condensed
 
     #################################################################
@@ -109,13 +108,14 @@ class EvtFileOps:
         """
         # Reading EF for some necessary keywords
         evtFileKeyWords = self.readEF()
-        TELESCOPE = evtFileKeyWords["TELESCOPE"]
 
         hdulist = fits.open(self.evtFile)
         GTIdata = hdulist["GTI"].data
         ST_GTI = GTIdata.field("START")
         ET_GTI = GTIdata.field("STOP")
         gtiList = (np.vstack((ST_GTI, ET_GTI))).T
+
+        hdulist.close()
 
         return evtFileKeyWords, gtiList
 
@@ -138,5 +138,7 @@ class EvtFileOps:
         piHigh = eneHigh / 0.01
         dataTP = pd.DataFrame(np.vstack((tbdata.field('TIME'), tbdata.field('PI'))).T, columns=['TIME', 'PI'])
         dataTP_eneFlt = dataTP.loc[((dataTP['PI'] >= piLow) & (dataTP['PI'] <= piHigh))]
+
+        hdulist.close()
 
         return dataTP_eneFlt
