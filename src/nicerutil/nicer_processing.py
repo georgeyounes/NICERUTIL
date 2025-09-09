@@ -11,6 +11,7 @@ from nicerutil.flagbackgrflares import flagbackgrflares
 from pathlib import Path
 from nicerutil.nicerutil_logging import get_logger
 from nicerutil.eventfile import EvtFileOps
+from nicerutil.nicermkf import pick_mkf
 
 sys.dont_write_bytecode = True
 
@@ -99,8 +100,7 @@ def process_obsid(obsID, indir, radec, evtsuffix='', tasks='all', threshfilter='
     # 4- run flagbackgrflares, and then nicerl2 again if necessary
     ##############################################################
     auxil_folder = Path("../../auxil/")  # finding the mkffile
-    file = next(auxil_folder.glob(f"ni{obsID}.mkf*"), None)
-    mkffile = str(file)
+    mkffile = str(pick_mkf(auxil_folder, obsID))
 
     _, distinct_flares = flagbackgrflares(level2_evtfile, mkffile, eneLow_back=eneLow_back,
                                           eneHigh_back=eneHigh_back, timebin=timebin, lcthresh=lcthresh,

@@ -20,7 +20,7 @@ from astropy.io import fits
 
 # Custom modules
 from nicerutil.eventfile import EvtFileOps
-from nicerutil.lightcurve import lightcurve
+from nicerutil.lightcurve import lightcurve, plotlightcurve
 from nicerutil.bursts import burstsearch, mergesamebursts
 from nicerutil.correctrateforfpmsel import correctrateforfpmsel
 from nicerutil.nicermkf import MkfFileOps, readmkffile
@@ -78,8 +78,19 @@ def flagbackgrflares(eventfile, mkffile, eneLow_back=12, eneHigh_back=15, timebi
     EF = EvtFileOps(eventfile)
     evtFileKeyWords, gtiList = EF.readGTI()
     full_exposure = evtFileKeyWords['ONTIME']
-    if full_exposure==0:
-        logger.warning('Exposure of event file {} is 0'.format(eventfile))
+
+    # Guard against non-existent GTI in event file (but with a valid ONTIME keyword!)
+    # GTI with the same START and STOP times (but also with a valid ONTIME keyword!)
+    # 0 exposure event files
+    # These instances become relevant for orbit day data after optical light leak
+    if gtiList.size == 0:
+        logger.warning('No valid GTI in event file {} - skipping'.format(eventfile))
+        return None, None
+    elif np.sum(gtiList[:, -1]-gtiList[:, 0]) == 0:
+        logger.warning('GTI sum to 0 in event file {} - skipping'.format(eventfile))
+        return None, None
+    elif full_exposure == 0:
+        logger.warning('Exposure of event file {} is 0 - skipping'.format(eventfile))
         return None, None
 
     # Dealing with the background
@@ -89,8 +100,9 @@ def flagbackgrflares(eventfile, mkffile, eneLow_back=12, eneHigh_back=15, timebi
     TIME_back = dataTP_eneFlt['TIME'].to_numpy()
 
     # Create light curve
-    binnedLC, _ = lightcurve(TIME_back, gtiList, timebin=timebin, lcthresh=lcthresh, outputFile=f"{outputFile}_bg_lc")
+    binnedLC, _ = lightcurve(TIME_back, gtiList, timebin=timebin, lcthresh=lcthresh)
     binnedLC_corr = correctrateforfpmsel(eventfile, binnedLC)
+    plotlightcurve(binnedLC_corr, outputFile=f"{outputFile}_bg_lc")
 
     # FLare search
     burstsearch_result = burstsearch(binnedLC_corr, probLim=probLim, outputfile=outputFile)
@@ -101,8 +113,9 @@ def flagbackgrflares(eventfile, mkffile, eneLow_back=12, eneHigh_back=15, timebi
     # Creating a light curve within source energy range
     dataTP_eneFlt_src = EF.filtenergy(eneLow=eneLow_src, eneHigh=eneHigh_src)
     TIME_src = dataTP_eneFlt_src['TIME'].to_numpy()
-    binnedLC_src, _ = lightcurve(TIME_src, gtiList, timebin=timebin, lcthresh=lcthresh, outputFile=f"{outputFile}_src_lc")
+    binnedLC_src, _ = lightcurve(TIME_src, gtiList, timebin=timebin, lcthresh=lcthresh)
     binnedLC_src_corr = correctrateforfpmsel(eventfile, binnedLC_src)
+    plotlightcurve(binnedLC_src_corr, outputFile=f"{outputFile}_src_lc")
 
     # Create .txt and .fits GTI files
     #################################
@@ -241,7 +254,7 @@ def plot_flare_diagnostics(back_lightcurve, flare_lightcurve, src_lightcurve, mk
     mask = np.where(~mkf_over_cor.tNICERmkf.isin(mkf_over_cor_clean.tNICERmkf), True, False)
     mkf_over_cor_flare = mkf_over_cor[mask]
     axs[2].errorbar(mkf_over_cor_flare['tNICERmkf'], mkf_over_cor_flare['OVER_ONLY_COUNT'], xerr=1 / 2, fmt='or')
-    axs[2].set_title(r'$\,\mathrm{TOT\_OVERONLY\_COUNT}$', fontsize=14)
+    axs[2].set_title(r'$\,\mathrm{TOT\_OVER\_COUNT}$', fontsize=14)
 
     # COR_SAX
     axs[3].tick_params(axis='both', labelsize=14)

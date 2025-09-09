@@ -5,6 +5,7 @@ nicermkf.py is a module to perform simple operations on nicer MKF files
 import numpy as np
 import pandas as pd
 from astropy.io import fits
+from pathlib import Path
 
 from nicerutil.nicerutil_logging import get_logger
 
@@ -218,7 +219,6 @@ def readmkffile(mkffile, under='MPU_UNDERONLY_COUNT', over='MPU_OVERONLY_COUNT')
     DEC_sun = tbdata.field('SUN_DEC')
     SUN_ANGLE = tbdata.field('SUN_ANGLE')
     SUNSHINE = tbdata.field('SUNSHINE')
-    SUN_BETA = tbdata.field('BETA_ANGLE')
     if 'KP' in hdulist['PREFILTER'].columns.names:
         KP_index = tbdata.field('KP')
     else:
@@ -279,7 +279,7 @@ def readmkffile(mkffile, under='MPU_UNDERONLY_COUNT', over='MPU_OVERONLY_COUNT')
 
     # This one does not have the per FPM data - a pain to implement in PANDAS
     mkfData_tmp = np.vstack(
-        (tNICERmkf, tNICERmkf_mjd, RA_sun, DEC_sun, SUN_ANGLE, SUNSHINE, KP_index, SUN_BETA, AZ_SUN, MOON_ANGLE,
+        (tNICERmkf, tNICERmkf_mjd, RA_sun, DEC_sun, SUN_ANGLE, SUNSHINE, KP_index, AZ_SUN, MOON_ANGLE,
          RA_pointing, DEC_pointing, ROLL, ang_dist, elevation, brightEarth, starTrackerValid, ATT_MODE, ATT_SUBMODE_AZ,
          ATT_SUBMODE_EL, inSAA, corSax, ATT_ANG_AZ, ATT_ANG_EL, TOToverCount))
 
@@ -315,7 +315,7 @@ def readmkffile(mkffile, under='MPU_UNDERONLY_COUNT', over='MPU_OVERONLY_COUNT')
     # converting the above to a dataframe
     mkftable_df = pd.DataFrame(mkfData,
                                columns=['tNICERmkf', 'tNICERmkf_mjd', 'RA_sun', 'DEC_sun', 'SUN_ANGLE', 'SUNSHINE',
-                                        'KP_index', 'SUN_BETA', 'AZ_SUN', 'MOON_ANGLE', 'RA_pointing', 'DEC_pointing',
+                                        'KP_index', 'AZ_SUN', 'MOON_ANGLE', 'RA_pointing', 'DEC_pointing',
                                         'ROLL', 'ang_dist', 'elevation', 'brightEarth',
                                         'starTrackerValid', 'ATT_MODE', 'ATT_SUBMODE_AZ', 'ATT_SUBMODE_EL', 'inSAA',
                                         'corSax', 'ATT_ANG_AZ', 'ATT_ANG_EL', 'TOToverCount', 'OVER_ONLY_COUNT',
@@ -344,3 +344,12 @@ def readmkffile(mkffile, under='MPU_UNDERONLY_COUNT', over='MPU_OVERONLY_COUNT')
                                         'FPM_under62', 'FPM_under63', 'FPM_under64', 'FPM_under65', 'FPM_under66',
                                         'FPM_under67'])
     return mkftable_df
+
+
+def pick_mkf(auxil_folder: Path, obsid: str):
+    base = auxil_folder / f"ni{obsid}.mkf"
+    if (p := base).is_file():
+        return p
+    if (g := base.with_suffix(base.suffix + ".gz")).is_file():
+        return g
+    return None
