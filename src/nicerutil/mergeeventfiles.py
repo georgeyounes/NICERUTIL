@@ -59,7 +59,10 @@ def merge_evt_gti_fpm(
 
     tmp1 = output_dir / f"{output_prefix}_tmp1_EVENTS.evt"
     tmp2 = output_dir / f"{output_prefix}_tmp2_GTI.evt"
-    final = output_dir / f"{output_prefix}_final.evt"
+    tmp3 = output_dir / f"{output_prefix}_tmp3_allmerged.evt"
+    tmp4 = output_dir / f"{output_prefix}_tmp4_EVENTS_sorted.evt"
+    tmp5 = output_dir / f"{output_prefix}_tmp5_GTI_sorted.evt"
+    final = output_dir / f"{output_prefix}_allmerged_sorted.evt"
 
     if list_filename is None:
         list_path = output_dir / f".ftmerge_{which}.lst"
@@ -68,19 +71,29 @@ def merge_evt_gti_fpm(
 
     # Step 1: EVENTS -> tmp1
     _write_ftmerge_list(base_list, "EVENTS", list_path)
-    execute(f"ftmerge @{shlex.quote(str(list_path))} {shlex.quote(str(tmp1))}")
+    execute(f"ftmeld @{shlex.quote(str(list_path))} {shlex.quote(str(tmp1))}")
 
     # Step 2: first = tmp1, GTI -> tmp2
     step2 = base_list.copy()
     step2[0] = tmp1
     _write_ftmerge_list(step2, "GTI", list_path)
-    execute(f"ftmerge @{shlex.quote(str(list_path))} {shlex.quote(str(tmp2))}")
+    execute(f"ftmeld @{shlex.quote(str(list_path))} {shlex.quote(str(tmp2))}")
 
     # Step 3: first = tmp2, FPM_SEL -> final
     step3 = base_list.copy()
     step3[0] = tmp2
     _write_ftmerge_list(step3, "FPM_SEL", list_path)
-    execute(f"ftmerge @{shlex.quote(str(list_path))} {shlex.quote(str(final))}")
+    execute(f"ftmeld @{shlex.quote(str(list_path))} {shlex.quote(str(tmp3))}")
+
+    # Sorting TIME column in EVENTS table
+    execute(f"ftmergesort '{shlex.quote(str(tmp3))}[EVENTS]' {shlex.quote(str(tmp4))} TIME")
+    # Sorting START column in GTI table
+    execute(f"ftmergesort '{shlex.quote(str(tmp4))}[GTI]' {shlex.quote(str(tmp5))} START")
+    # Sorting TIME column in FPM_SEL table
+    execute(f"ftmergesort '{shlex.quote(str(tmp5))}[FPM_SEL]' {shlex.quote(str(final))} TIME")
+
+    # Remove temporary files
+    execute("rm -rf *_tmp*")
 
     return {
         "which": which,

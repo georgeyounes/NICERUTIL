@@ -41,12 +41,12 @@ def run_nicerl2(obsID, indir='.', evtsuffix='NONE', tasks='all',
     return level2_evtfile
 
 
-def run_barycentering(eventfile, outfile, orbitfile, ra, dec):
+def run_barycentering(eventfile, outfile, orbitfile, ra, dec, clobber):
     """
     Run barycentering correction
     """
     command_barycorr = (f"barycorr infile={eventfile} outfile={outfile} ra={ra} dec={dec} "
-                        f"orbitfiles={orbitfile} refframe=ICRS ephem=JPLEPH.430 chatter=5")
+                        f"orbitfiles={orbitfile} clobber={clobber} refframe=ICRS ephem=JPLEPH.430 chatter=5")
     execute(command_barycorr)
 
     return outfile
@@ -138,8 +138,8 @@ def process_obsid(obsID, indir, radec, evtsuffix='', tasks='all', threshfilter='
         file = next(auxil_folder.glob(f"ni{obsID}.orb*"), None)
         orbfile = str(file)
         bary_outfile = f"{level2_evtfile.split('.')[0]}_bc.evt"
-        execute(f"barycorr infile={level2_evtfile} outfile={bary_outfile} orbitfiles={orbfile} "
-                f"ra={ra} dec={dec} clobber=YES refframe=ICRS ephem=JPLEPH.430 chatter=5")
+        run_barycentering(level2_evtfile, bary_outfile, orbfile, ra, dec, clobber='YES')
+
         logger.info('\n Barycentering correction complete.')
 
     # 6- returning to base directory
