@@ -160,7 +160,7 @@ def lightcurve(TIME, GTI, timebin=100., lcthresh=0.1, tstart=None, tend=None, ou
                 'ctsbin': np.concatenate(binnedLC_list[4]).ravel()}
 
     binnedLC = pd.DataFrame.from_dict(binnedLC)
-    binnedLC = binnedLC[binnedLC.lcBinsRange > (lcthresh * timebin)]
+    binnedLC = binnedLC[binnedLC.lcBinsRange >= (lcthresh * timebin)]
 
     if outputFile is not None:
         plotlightcurve(binnedLC, outputFile=outputFile)

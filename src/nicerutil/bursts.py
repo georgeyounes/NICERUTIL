@@ -27,7 +27,7 @@ def burstsearch(binnedLC, probLim=0.01, outputfile=None):
     :type probLim: float
     :param outputfile: Name of file to save the burst search
     :type outputfile: str
-    :return: burstsearch_result, dictionary with keys {'bin_bursts', 'bins_nobursts', 'average_rate_nobursts'}
+    :return: dictionary with keys {'bin_bursts', 'bins_nobursts', 'average_rate_nobursts', 'average_rate'}
     :rtype: dict
     """
     average_rate = np.mean(binnedLC["ctrate"])

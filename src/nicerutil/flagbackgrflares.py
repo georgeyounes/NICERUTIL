@@ -17,6 +17,7 @@ import argparse
 import os
 import numpy as np
 from astropy.io import fits
+import pandas as pd
 
 # Custom modules
 from nicerutil.eventfile import EvtFileOps
@@ -25,6 +26,7 @@ from nicerutil.bursts import burstsearch, mergesamebursts
 from nicerutil.correctrateforfpmsel import correctrateforfpmsel
 from nicerutil.nicermkf import MkfFileOps, readmkffile
 from nicerutil.nicerutil_logging import get_logger
+from nicerutil.build_gti import write_gti
 
 sys.dont_write_bytecode = True
 
@@ -86,7 +88,7 @@ def flagbackgrflares(eventfile, mkffile, eneLow_back=12, eneHigh_back=15, timebi
     if gtiList.size == 0:
         logger.warning('No valid GTI in event file {} - skipping'.format(eventfile))
         return None, None
-    elif np.sum(gtiList[:, -1]-gtiList[:, 0]) == 0:
+    elif np.sum(gtiList[:, -1] - gtiList[:, 0]) == 0:
         logger.warning('GTI sum to 0 in event file {} - skipping'.format(eventfile))
         return None, None
     elif full_exposure == 0:
@@ -122,40 +124,8 @@ def flagbackgrflares(eventfile, mkffile, eneLow_back=12, eneHigh_back=15, timebi
     if not flares.empty:
         # Merge flares separated by timebin
         distinct_flares = mergesamebursts(flares, tsameburst=1.5 * timebin)
-
-        # Creating a GTI file
-        f = open(outputFile + "_gti.txt", "w+")
-        # Heasoft likes the times written a certain way
-        for jj, (burst_nbr, burst_df) in enumerate(distinct_flares.items()):
-            # If one flare
-            if (jj == 0) and (len(distinct_flares) == 1):
-                burststart_tmp = ((burst_df['lcBins'].loc[0]) - (burst_df['lcBinsRange'].loc[0] / 2))
-                burstend_tmp = ((burst_df['lcBins'].loc[burst_df.index[-1]]) +
-                                (burst_df['lcBinsRange'].loc[burst_df.index[-1]] / 2))
-                f.write('(TIME<{}).or.(TIME>{})'.format(burststart_tmp, burstend_tmp))
-            # If first flare but multiple flares
-            elif jj == 0 and (len(distinct_flares) != 1):
-                burststart_tmp = ((burst_df['lcBins'].loc[0]) - (burst_df['lcBinsRange'].loc[0] / 2))
-                burstend_tmp = ((burst_df['lcBins'].loc[burst_df.index[-1]]) +
-                                (burst_df['lcBinsRange'].loc[burst_df.index[-1]] / 2))
-                f.write('(TIME<{}).or.((TIME>{})'.format(burststart_tmp, burstend_tmp))
-            # If last flare
-            elif jj == (len(distinct_flares) - 1):
-                burststart_tmp = ((burst_df['lcBins'].loc[0]) - (burst_df['lcBinsRange'].loc[0] / 2))
-                burstend_tmp = ((burst_df['lcBins'].loc[burst_df.index[-1]]) +
-                                (burst_df['lcBinsRange'].loc[burst_df.index[-1]] / 2))
-                f.write('.and.(TIME<{})).or.(TIME>{})'.format(burststart_tmp, burstend_tmp))
-            # If middle flares
-            else:
-                burststart_tmp = ((burst_df['lcBins'].loc[0]) - (burst_df['lcBinsRange'].loc[0] / 2))
-                burstend_tmp = ((burst_df['lcBins'].loc[burst_df.index[-1]]) +
-                                (burst_df['lcBinsRange'].loc[burst_df.index[-1]] / 2))
-                f.write('.and.(TIME<{})).or.((TIME>{})'.format(burststart_tmp, burstend_tmp))
-
-        f.close()
-
-        command = 'maketime ' + mkffile + ' ' + outputFile + '_gti.fits @' + outputFile + '_gti.txt anything anything TIME no clobber=yes'
-        os.system(command)
+        flare_start_stop_df = flares_dict_to_intervals(distinct_flares)
+        write_gti(flare_start_stop_df, mkffile, outputFile)
 
         # Create a simple diagnostic plot of the flares
         ###############################################
@@ -191,6 +161,25 @@ def flagbackgrflares(eventfile, mkffile, eneLow_back=12, eneHigh_back=15, timebi
         logger.info('\n No flares found.')
 
     return flares, distinct_flares
+
+
+def flares_dict_to_intervals(distinct_flares: dict[str, pd.DataFrame]) -> pd.DataFrame:
+    """
+    Convert a dict of light curve DataFrames into a (tstart, tstop) DataFrame.
+    Each DF must have ['lcBins','lcBinsRange'] and be ordered by time - as in the result of
+    the lightcurve() function in lightcurve.py module
+    This is really only used for filtering out flaring time intervals
+    :param distinct_flares: dict of flare light-curve dataframes
+    :type distinct_flares: dict[str, pd]
+    :return: DataFrame of tstart and tstop times of the flare intervals
+    :rtype: pandas.DataFrame
+    """
+    rows = []
+    for key, burst_df in distinct_flares.items():
+        start = burst_df['lcBins'].iloc[0] - (burst_df['lcBinsRange'].iloc[0] / 2.0)
+        stop = burst_df['lcBins'].iloc[-1] + (burst_df['lcBinsRange'].iloc[-1] / 2.0)
+        rows.append((start, stop, key))
+    return pd.DataFrame(rows, columns=['tstart', 'tstop', 'label'])[['tstart', 'tstop']]
 
 
 def plot_flare_diagnostics(back_lightcurve, flare_lightcurve, src_lightcurve, mkf_over_cor, mkf_over_cor_clean,
