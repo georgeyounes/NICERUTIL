@@ -11,13 +11,13 @@ background flares caused by high-energy particles. This component in NICER is kn
 Another script called **correctfpmsel** will filter the FPM_SEL table in an event file so that its 
 time stamps (TIME column) fall within the GTIs. This is not always the case and, when some of the 
 time stamps in FPM_SEL aren't covered by the orbit file of the observation, it causes the HEASoft 
-barycentering routine BARYCORR to fail when attempting to barycenter the FPM_SEL TIME column. For 
-this reason, BARYCORR, in its current version, skips over the barycentering of the TIME column in 
-the FPM_SEL table of an event file. Below, I will summarize how to regain the BARYCORR ability to 
+barycentering routine ```BARYCORR``` to fail when attempting to barycenter the FPM_SEL TIME column. For 
+this reason, ```BARYCORR```, in HEASoft versions 6.31 to 6.35, skips over the barycentering of the TIME column in 
+the FPM_SEL table of an event file. Below, I will summarize how to regain the ```BARYCORR``` ability to 
 apply barycenteric correction to the FPM_SEL table, and the use of the
-script **correctfpmsel**.
+script **correctfpmsel**. Note, that HEASoft 6.36 now corrects for this, and **correctfpmsel** can be safely skipped.  
 
-There is now a module that allows the user to download nicer data from AWS (get_nicer_aws.py). It 
+There is a module that allows the user to download nicer data from AWS (get_nicer_aws.py). It 
 can be accessed through the CLI **getniceraws**. The usual **getniceraws -h** will provide a list 
 of arguments. Example usage:
 
@@ -71,25 +71,29 @@ of required and optional arguments with the usual '-h' option. Here we shall cov
 
 **correctfpmsel** is really only useful if you wish to barycenter-correct the TIME column in the 
 FPM_SEL table of a NICER event file, and only in the cases when the said TIME column has some time 
-stamps outside of the valid orbit file for the given observation, which causes BARYCORR to fail. 
-Note that in its current form, BARYCORR skips over barycentering the TIME column of the FPM_SEL 
-table (since [HEASoft version 6.31](https://heasarc.gsfc.nasa.gov/FTP/software/ftools/release/archive/Release_Notes_6.31)). Hence, we first need to re-enable barycentering of the 
-TIME column in the FPM_SEL table.
+stamps outside the valid orbit file for the given observation, which causes ```BARYCORR``` to fail.
+From [HEASoft version 6.31](https://heasarc.gsfc.nasa.gov/FTP/software/ftools/release/archive/Release_Notes_6.31)) 
+to version 6.35,  ```BARYCORR``` skips over barycentering the TIME column of the FPM_SEL table. Hence, re-enable 
+barycentering of the TIME column in the FPM_SEL table is required.
+
+Starting in [HEASoft version 6.36](https://heasarc.gsfc.nasa.gov/docs/software/lheasoft/release_notes/RelNotes_6.36.0.html)
+```BARYCORR``` again barycenters the FPM_SEL table, hence, you do not need to run **correctfpmsel** anymore. Running it
+should not cause any harm, however.
 
 #### Enabling FPM_SEL barycentering through BARYCORR
 
-If you wish to allow the heasoft tool BARYCORR to perform barycentering on the FPM_SEL table of a 
-NICER event file, you can follow these steps: (1) in axBary.c, which can be found under 
-heasoft-version/heagen/barycorr/, remove the block that states that "always ignore NICER FPM_SEL 
-extension" (code on line 577), (2) navigate to heasoft-version/heagen/your-build/BUILD_DIR, and 
-(3) run **./hmake** and then **./hmake install**.
+If you are running HEASoft version 6.31 to 6.35, and you wish to allow the heasoft tool ```BARYCORR``` 
+to perform barycentering on the FPM_SEL table of a NICER event file, you can follow these steps: 
+(1) in axBary.c, which can be found under heasoft-version/heagen/barycorr/, remove the block that states 
+that "always ignore NICER FPM_SEL extension" (code on line 577), 
+(2) navigate to heasoft-version/heagen/your-build/BUILD_DIR, and (3) run **./hmake** and then **./hmake install**.
 
 In the above, heasoft-version directory refers to the version number, e.g., heasoft-6.33.1. Also, 
 the your-build directory refers to your machine's architecture, e.g., aarch64-apple-darwin23.4.0. 
-Your BARYCORR should now barycenter-correct the TIME column in the FPM_SEL table.
+Your ```BARYCORR``` should now barycenter-correct the TIME column in the FPM_SEL table.
 
-For the most part, BARYCORR will run without any errors. However, there are few instances when 
-that is not the case, and BARYCORR exits with an error (something like TIME outside of orbit file).
+For the most part, ```BARYCORR``` will run without any errors. However, there are few instances when 
+that is not the case, and ```BARYCORR``` exits with an error (something like TIME outside of orbit file).
 The tool **correctfpmsel** will fix this issue by filtering out these time stamps.
 
 
@@ -100,7 +104,7 @@ To run **correctfpmsel**, all that you require is an event file
 ```
 
 This will eliminate any 1-second TIME stamps in the FPM_SEL table of the event file that are not 
-covered by the GTI table. You may now run **barycorr** on that event file, and it shall run through 
+covered by the GTI table. You may now run ```BARYCORR``` on that event file, and it shall run through 
 the barycentering of the TIME column in FPM_SEL without any errors.
 
 ### Running **flaghighenergyflares** 
