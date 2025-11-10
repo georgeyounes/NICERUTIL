@@ -89,13 +89,13 @@ def process_obsid(obsID, indir, radec, evtsuffix='', tasks='all', threshfilter='
     else:
         level2_evtfile = f"ni{obsID}_0mpu7_cl_{evtsuffix}.evt"
 
-    # 2- run correctfpmsel
-    ######################
-    correctfpmsel(level2_evtfile)
-
-    # 3- run correct_gtis
+    # 2- run correct_gtis
     #####################
     correct_gtis(level2_evtfile)
+
+    # 3- run correctfpmsel
+    ######################
+    correctfpmsel(level2_evtfile)
 
     # 4- run flagbackgrflares, and then nicerl2 again if necessary
     ##############################################################

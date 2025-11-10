@@ -27,7 +27,7 @@ def correctfpmsel(eventfile):
     # Getting TSTART and TSTOP from EVENTS table
     TSTART = hdulist['EVENTS'].header['TSTART']
     TSTOP = hdulist['EVENTS'].header['TSTOP']
-    # #xtracting GTI table
+    # Extracting GTI table
     ST_GTI = hdulist["GTI"].data['START']
     ET_GTI = hdulist["GTI"].data['STOP']
     gtiTable = (np.vstack((ST_GTI, ET_GTI))).T
@@ -46,9 +46,10 @@ def correctfpmsel(eventfile):
     for jj in range(len(gtiTable[:, 0])):
         indices_goodfpmsel_pergti = np.where((fpmsel_ext.data['TIME'] >= np.floor(gtiTable[jj, 0])) & (
                     fpmsel_ext.data['TIME'] <= np.ceil(gtiTable[jj, 1])))
-        indices_goodfpmsel = np.append(indices_goodfpmsel, indices_goodfpmsel_pergti)
-    indices_goodfpmsel = indices_goodfpmsel.astype(int)
 
+        indices_goodfpmsel = np.append(indices_goodfpmsel, indices_goodfpmsel_pergti)
+    indices_goodfpmsel = np.unique(indices_goodfpmsel.astype(int))
+    print(len(indices_goodfpmsel))
     # Filtering out the FPM_SEL table - this is done through TABLE class of astropy.table
     fpmsel_table = Table.read(eventfile, format='fits', hdu='FPM_SEL')
     fpmsel_table_flt = fpmsel_table[indices_goodfpmsel]

@@ -25,6 +25,7 @@ import pandas as pd
 from nicerutil.eventfile import EvtFileOps
 from nicerutil.bursts import burstsearch
 from nicerutil.nicerutil_logging import get_logger
+from nicerutil.correct_gtis import update_gti
 
 sys.dont_write_bytecode = True
 
@@ -80,36 +81,8 @@ def lightcurve(TIME, GTI, timebin=100., lcthresh=0.1, tstart=None, tend=None, ou
         logger.error(ve)
         raise
 
-    # Restructuring GTI if tstart and tend are provided
-    if tstart is None and tend is None:
-        logger.info('\n No tstart or tend provided. Using full GTI table instead\n')
-
-    elif tstart is not None and tend is None:
-        logger.info('\n Fixing GTI start time to match user defined tstart')
-        includegti_idx = (GTI[:, 1] > tstart)
-        GTI = GTI[:][includegti_idx]
-        if tstart > GTI[0, 0]:
-            GTI[0, 0] = tstart
-
-    elif tstart is None and tend is not None:
-        logger.info('\n Fixing GTI end time to match user defined tend')
-        includegti_idx = (GTI[:, 0] < tend)
-        GTI = GTI[:][includegti_idx]
-        if tend < GTI[-1, -1]:
-            GTI[-1, -1] = tend
-
-    elif tstart is not None and tend is not None:
-        logger.info('\n Fixing GTI start and end time to match user defined tstart and tend')
-        # Fixing tstart
-        includegti_idx = (GTI[:, 1] > tstart)
-        GTI = GTI[:][includegti_idx]
-        if tstart > GTI[0, 0]:
-            GTI[0, 0] = tstart
-        # Fixing tend
-        includegti_idx = (GTI[:, 0] < tend)
-        GTI = GTI[:][includegti_idx]
-        if tend < GTI[-1, -1]:
-            GTI[-1, -1] = tend
+    # Update GTI to match user-input tstart and tend
+    GTI = update_gti(GTI, tstart, tend)
 
     # Creating light curve
     binnedLC_list = [[] for i in range(5)]  # empty lightcurve list
