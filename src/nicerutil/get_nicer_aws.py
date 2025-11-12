@@ -24,6 +24,7 @@ from astroquery.heasarc import Heasarc
 import astropy.units as u
 from astropy.coordinates import SkyCoord
 from astropy.time import Time
+import numpy as np
 
 
 def query_nicer_observations(srcname=None, ra=None, dec=None, radius_deg=0.2):
@@ -61,7 +62,7 @@ def download_obs_from_aws(obsid, year_month, output_base):
 
     if os.path.isdir(output_dir) and any(os.scandir(output_dir)):
         print(f"[SKIP] {obsid_str} already exists at {output_dir}")
-        return
+        return None
 
     s3_path = f"s3://nasa-heasarc/nicer/data/obs/{year_month}/{obsid_str}/"
 
@@ -73,7 +74,7 @@ def download_obs_from_aws(obsid, year_month, output_base):
 
     if check_result.returncode != 0 or check_result.stdout.strip() == b"":
         print(f"[WARN] OBSID {obsid_str} not found on AWS site {s3_path} — skipping")
-        return
+        return obsid_str
 
     # Proceed to create output dir and download
     os.makedirs(output_dir, exist_ok=True)
@@ -91,11 +92,10 @@ def download_obs_from_aws(obsid, year_month, output_base):
     else:
         print(f"[OK] Downloaded {obsid_str}")
 
-    return
+    return None
 
 
 def get_data(radius, start, end, srcname=None, radec=None, outdir='./'):
-
     # Query NICER observations
     if srcname is not None:
         result_table = query_nicer_observations(srcname=srcname, radius_deg=radius)
@@ -123,11 +123,34 @@ def get_data(radius, start, end, srcname=None, radec=None, outdir='./'):
     year_months = get_year_month_from_mjd(timeflt_table['time'].value)
 
     # Download each observation
+    obsid_not_in_aws = []
     for row, ym in zip(timeflt_table, year_months):
-        download_obs_from_aws(obsid=row['obsid'],
-                              year_month=ym,
-                              output_base=outdir)
-    return [outdir+'/'+str(oid) for oid in timeflt_table['obsid']]
+        obsid = download_obs_from_aws(obsid=row['obsid'],
+                                      year_month=ym,
+                                      output_base=outdir)
+        if obsid is not None:
+            obsid_not_in_aws.append(obsid)
+
+    if obsid_not_in_aws:
+        print(f"\nObservations not found in AWS:")
+        print(f"{obsid_not_in_aws}")
+        print("Eliminating these observations from list of the source obs IDs")
+
+        # Filtering for obs IDs found in AWS S3
+        mask_in_aws = ~np.isin(timeflt_table['obsid'], obsid_not_in_aws)
+        timeflt_table_in_aws = timeflt_table[mask_in_aws]
+
+        # Filtering for obs IDs not found in AWS S3
+        mask_not_in_aws = np.isin(timeflt_table['obsid'], obsid_not_in_aws)
+        timeflt_table_df_not_in_aws = timeflt_table[mask_not_in_aws]
+
+        # Printing out some info for user
+        print(f"{timeflt_table_df_not_in_aws['processing_status']}")
+        print(f"If processing_status is PROCESSED, observations cannot be downloaded")
+        print(f"If processing_status is VALIDATED, observations can be downloaded from HEASARC\n")
+        return [outdir + '/' + str(oid) for oid in timeflt_table_in_aws['obsid']]
+    else:
+        return [outdir + '/' + str(oid) for oid in timeflt_table['obsid']]
 
 
 def main():
@@ -147,13 +170,9 @@ def main():
     parser.add_argument("-e", "--end", type=str, default="2032-12-31",
                         help="End date (YYYY-MM-DD; default: 2032-12-31)")
     args = parser.parse_args()
-    
-    get_data(args.radius, args.start, args.end, args.srcname, args.radec, args.outdir)
 
+    get_data(args.radius, args.start, args.end, args.srcname, args.radec, args.outdir)
 
 
 if __name__ == "__main__":
     main()
-
-
-
