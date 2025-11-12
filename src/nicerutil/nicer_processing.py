@@ -111,9 +111,6 @@ def process_obsid(obsID, indir, radec, evtsuffix='', tasks='all', threshfilter='
         flagged_gtis = f"{outputFile}_gti.fits"  # naming convention of flare GTI
         # Note that STDGTI is name of HDU table when gti is built with heasoft tools
         execute(f"ftmgtime {flagged_gtis},{gtifiles} flaregti_and_usergti.fits AND clobber=YES")
-        # These are not necessary with ftmgtime
-        #execute(f"ftmergesort 'flaregti_and_usergti.fits[STDGTI]' flaregti_and_usergti_sorted.fits START")
-        #execute(f"mv -f flaregti_and_usergti_sorted.fits flaregti_and_usergti.fits")
         # rerun nicerl2
         cd("../../../")  # You must be in the base directory where obsID resides to run nicerl2
         run_nicerl2(obsID, indir='.', evtsuffix=evtsuffix, tasks='SCREEN', threshfilter=threshfilter,
