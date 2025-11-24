@@ -4,6 +4,7 @@ from nicerutil.get_nicer_aws import get_data
 from nicerutil.convenience import *
 import yaml
 import argparse
+import os
 
 from nicerutil.correctfpmsel import correctfpmsel
 from nicerutil.correct_gtis import correct_gtis
@@ -83,11 +84,20 @@ def process_obsid(obsID, indir, radec, evtsuffix='', tasks='all', threshfilter='
     run_nicerl2(obsID, indir=indir, evtsuffix=evtsuffix, tasks=tasks,
                 threshfilter=threshfilter, gtifiles=gtifiles, clobber=clobber)
 
-    cd(f"{obsID}/xti/event_cl/")
+    cd(f"{obsID}/xti/event_cl/")  # moving to level 2 event file directory
     if (evtsuffix.lower() == 'none') or (evtsuffix == ''):
         level2_evtfile = f"ni{obsID}_0mpu7_cl.evt"
     else:
         level2_evtfile = f"ni{obsID}_0mpu7_cl_{evtsuffix}.evt"
+
+    # Check if level-2 event file was created - if not skip analysis
+    # This should not happen, but sometimes it does, e.g., where an HK file has 0 rows and nicerl2 exists with an error
+    if os.path.isfile(level2_evtfile):
+        logger.info(f"Processing level 2 event file {level2_evtfile}")
+    else:
+        logger.info(f"No level 2 event file to process - skipping observation id {obsID}")
+        cd("../../../")  # returning to base directory
+        return None
 
     # 2- run correct_gtis
     #####################
